@@ -1,0 +1,49 @@
+# VIP Ride-Hailing Platform
+
+Django==5.2.5
+djangorestframework==3.16.0
+psycopg2-binary==2.9.10
+redis==6.3.0
+celery==5.5.3
+django-cors-headers==4.7.0
+django-filter==25.1
+django-extensions==4.1
+pillow==11.3.0
+cryptography==45.0.6
+pyjwt==2.10.1
+
+# GPS Tracking & Real-time Features
+channels==4.3.1
+channels-redis==4.3.0
+geopy==2.4.1
+geoip2==5.1.0
+googlemaps==4.10.0
+
+# Development Dependencies
+python-decouple==3.8
+django-debug-toolbar==6.0.0
+coverage==7.10.2
+
+# Production Dependencies
+gunicorn==23.0.0
+whitenoise==6.9.0
+django-storages==1.14.6
+boto3==1.40.3
+
+# Payment Processing
+requests==2.32.4
+
+# Task Queue
+flower==2.0.1  # Celery monitoring
+
+# Testing
+factory-boy==3.3.3
+pytest==8.4.1
+pytest-django==4.11.1
+pytest-cov==6.2.1
+
+# API Documentation
+drf-spectacular==0.28.0
+
+# Environment Variables
+python-dotenv==1.1.1

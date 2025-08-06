@@ -1,0 +1,199 @@
+# Django VIP Ride-Hailing Platform - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# Secrets and Keys
+*.key
+*.pem
+*.p12
+secret_key.txt
+
+# Database
+*.sqlite3
+*.db
+
+# Cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js (for React Native)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# React Native
+.expo/
+.expo-shared/
+expo-env.d.ts
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Redis
+dump.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Static files (collected)
+staticfiles/
+static_root/
+
+# Media files (user uploads)
+media_root/
+
+# GPS Tracking specific
+gps_logs/
+location_data/
+route_cache/
+
+# VIP Encryption Keys (NEVER commit these!)
+encryption_keys/
+vip_keys/
+*.enc
+
+# Payment Processing (NEVER commit these!)
+payment_keys/
+stripe_keys/
+paystack_keys/
+
+# API Keys (NEVER commit these!)
+google_maps_api_key.txt
+api_keys.json
+
+# Hotel Partnership Configs
+hotel_configs/
+partner_credentials/
+
+# Test Data
+test_data/
+sample_locations.json
+mock_rides.json
+
+# Documentation builds
+docs/_build/
+site/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# pytype
+.pytype/
+
+# Cython
+cython_debug/
