@@ -1,0 +1,51 @@
+# Testing Requirements
+# Packages specifically for running tests
+
+-r base.txt
+
+# Testing Framework
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+pytest-xdist==3.6.0
+pytest-html==4.1.1
+pytest-sugar==1.0.0
+
+# Coverage
+coverage==7.6.7
+coverage-badge==1.1.2
+
+# Mock and Fixtures
+factory-boy==3.3.1
+faker==33.0.0
+responses==0.25.3
+freezegun==1.5.1
+
+# Testing Utilities
+model-bakery==1.20.0
+django-test-plus==2.2.4
+
+# API Testing
+djangorestframework-api-key==3.0.0
+
+# Performance Testing
+locust==2.32.2
+django-silk==5.2.0
+
+# Database Testing
+pytest-postgresql==6.1.1
+
+# Selenium Testing (for integration tests)
+selenium==4.27.1
+django-selenium-clean==0.2.1
+
+# Load Testing
+artillery==1.0.0
+
+# Security Testing
+bandit==1.7.10
+safety==3.2.11
+
+# Documentation Testing
+doc8==1.1.2

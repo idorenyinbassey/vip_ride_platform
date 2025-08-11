@@ -1,6 +1,50 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 import uuid
+
+
+class UserManager(BaseUserManager):
+    """Custom user manager for email-based authentication"""
+    
+    def _create_user(self, email, password, **extra_fields):
+        """Create and save a user with the given email and password."""
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        
+        # Generate username from email if not provided
+        if not extra_fields.get('username'):
+            username_base = email.split('@')[0]
+            username = username_base
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{username_base}{counter}"
+                counter += 1
+            extra_fields['username'] = username
+        
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular user."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and save a superuser."""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
+        return self._create_user(email, password, **extra_fields)
 
 
 class UserTier(models.TextChoices):
@@ -24,6 +68,16 @@ class DriverCategory(models.TextChoices):
 
 
 class User(AbstractUser):
+    # Override username to make it optional
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text='Optional. 150 characters or fewer. Letters, digits and @/./+/-/_ only.',
+        validators=[UnicodeUsernameValidator()],
+    )
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, unique=True)
@@ -85,8 +139,11 @@ class User(AbstractUser):
     )
     last_seen = models.DateTimeField(null=True, blank=True)
     
+    # Custom manager
+    objects = UserManager()
+    
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'phone_number']
+    REQUIRED_FIELDS = ['phone_number']
     
     class Meta:
         db_table = 'users'

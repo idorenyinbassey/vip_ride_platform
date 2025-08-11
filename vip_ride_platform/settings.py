@@ -22,10 +22,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-d3)8u3v#w$i741@1^z)r8++2f$1#c**g#y4xdym!*!4($8)15z')
+# Generate a strong SECRET_KEY for production (50+ chars, 5+ unique chars)
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 
+    'vip-ride-platform-prod-key-2025-$#@!*&^%abcdefghijklmnopqrstuvwxyz123456789'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+# For development, set DEBUG=True via environment variable
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+
+# For development server, you can run with:
+# export DEBUG=True (Linux/Mac) or set DEBUG=True (Windows)
+# This will disable SSL redirects and secure cookies for local development
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
@@ -52,7 +61,9 @@ INSTALLED_APPS = [
     'accounts',
     'rides',
     'payments',
+    'pricing',
     'hotels',
+    'hotel_partnerships',
     'notifications',
     'control_center',
     'fleet_management',
@@ -61,6 +72,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'accounts.security_middleware.CustomSecurityMiddleware',  # Custom security middleware
+    'accounts.rate_limit_middleware.RateLimitMiddleware',  # Rate limiting
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -226,6 +239,34 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+# Additional Security Headers
+# Only enable SSL redirect in production (not in development)
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Session Security
+# Only require secure cookies in production
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF Security
+# Only require secure CSRF cookies in production
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Content Security Policy (basic)
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+CSP_IMG_SRC = ("'self'", "data:", "https:")
+CSP_FONT_SRC = ("'self'", "https:")
+CSP_CONNECT_SRC = ("'self'",)
+CSP_FRAME_ANCESTORS = ("'none'",)
+
 # Encryption Settings for VIP GPS
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'your-32-byte-encryption-key-here')
 
@@ -273,6 +314,95 @@ DRIVER_SUBSCRIPTION_FEES = {
     'PREMIUM': 199,
     'VIP': 299,
 }
+
+# Payment Gateway Configuration
+PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
+PAYSTACK_WEBHOOK_SECRET = os.environ.get('PAYSTACK_WEBHOOK_SECRET', '')
+PAYSTACK_TEST_MODE = os.environ.get('PAYSTACK_TEST_MODE', 'True').lower() == 'true'
+
+FLUTTERWAVE_PUBLIC_KEY = os.environ.get('FLUTTERWAVE_PUBLIC_KEY', '')
+FLUTTERWAVE_SECRET_KEY = os.environ.get('FLUTTERWAVE_SECRET_KEY', '')
+FLUTTERWAVE_ENCRYPTION_KEY = os.environ.get('FLUTTERWAVE_ENCRYPTION_KEY', '')
+FLUTTERWAVE_WEBHOOK_SECRET = os.environ.get('FLUTTERWAVE_WEBHOOK_SECRET', '')
+FLUTTERWAVE_TEST_MODE = os.environ.get('FLUTTERWAVE_TEST_MODE', 'True').lower() == 'true'
+
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+STRIPE_TEST_MODE = os.environ.get('STRIPE_TEST_MODE', 'True').lower() == 'true'
+
+# Exchange Rate API Configuration
+FIXER_API_KEY = os.environ.get('FIXER_API_KEY', '')
+EXCHANGERATE_API_KEY = os.environ.get('EXCHANGERATE_API_KEY', '')
+EXCHANGE_RATE_UPDATE_INTERVAL = int(os.environ.get('EXCHANGE_RATE_UPDATE_INTERVAL', '6'))
+
+# Payment Configuration
+DEFAULT_PAYMENT_GATEWAY = os.environ.get('DEFAULT_PAYMENT_GATEWAY', 'paystack')
+PAYMENT_GATEWAY_PRIORITY = ['paystack', 'flutterwave', 'stripe']
+PAYMENT_MAX_RETRY_ATTEMPTS = int(os.environ.get('PAYMENT_MAX_RETRY_ATTEMPTS', '3'))
+PAYMENT_RETRY_DELAY_MINUTES = int(os.environ.get('PAYMENT_RETRY_DELAY_MINUTES', '5'))
+
+# Validate payment gateway configuration
+if DEFAULT_PAYMENT_GATEWAY not in PAYMENT_GATEWAY_PRIORITY:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        f"DEFAULT_PAYMENT_GATEWAY '{DEFAULT_PAYMENT_GATEWAY}' is not in "
+        f"PAYMENT_GATEWAY_PRIORITY {PAYMENT_GATEWAY_PRIORITY}. "
+        f"Valid options: {', '.join(PAYMENT_GATEWAY_PRIORITY)}"
+    )
+
+# Validate required payment gateway keys in production
+# Only validate if STRICT_PRODUCTION_MODE is enabled
+STRICT_PRODUCTION_MODE = os.environ.get('STRICT_PRODUCTION_MODE', 'False').lower() == 'true'
+
+if not DEBUG and STRICT_PRODUCTION_MODE:
+    missing_keys = []
+    
+    # Check Paystack keys
+    if not PAYSTACK_PUBLIC_KEY or not PAYSTACK_SECRET_KEY:
+        missing_keys.append("Paystack keys (PAYSTACK_PUBLIC_KEY, PAYSTACK_SECRET_KEY)")
+    
+    # Check Flutterwave keys  
+    if not FLUTTERWAVE_PUBLIC_KEY or not FLUTTERWAVE_SECRET_KEY or not FLUTTERWAVE_ENCRYPTION_KEY:
+        missing_keys.append("Flutterwave keys (FLUTTERWAVE_PUBLIC_KEY, FLUTTERWAVE_SECRET_KEY, FLUTTERWAVE_ENCRYPTION_KEY)")
+    
+    # Check Stripe keys
+    if not STRIPE_PUBLISHABLE_KEY or not STRIPE_SECRET_KEY:
+        missing_keys.append("Stripe keys (STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY)")
+    
+    if missing_keys:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            f"Missing required payment gateway keys in production: {'; '.join(missing_keys)}"
+        )
+AUTO_PAYOUT_THRESHOLD = float(os.environ.get('AUTO_PAYOUT_THRESHOLD', '100.00'))
+MIN_PAYOUT_AMOUNT = float(os.environ.get('MIN_PAYOUT_AMOUNT', '10.00'))
+PAYOUT_SCHEDULE = os.environ.get('PAYOUT_SCHEDULE', 'weekly')  # daily, weekly, monthly
+
+# Payment Security Configuration
+PAYMENT_ENCRYPTION_KEY = os.environ.get('PAYMENT_ENCRYPTION_KEY', ENCRYPTION_KEY)
+ENCRYPT_PAYMENT_DATA = os.environ.get('ENCRYPT_PAYMENT_DATA', 'True').lower() == 'true'
+PCI_COMPLIANCE_MODE = os.environ.get('PCI_COMPLIANCE_MODE', 'True').lower() == 'true'
+AUDIT_ALL_TRANSACTIONS = os.environ.get('AUDIT_ALL_TRANSACTIONS', 'True').lower() == 'true'
+PAYMENT_TOKEN_EXPIRY_MINUTES = int(os.environ.get('PAYMENT_TOKEN_EXPIRY_MINUTES', '30'))
+WEBHOOK_TIMEOUT_SECONDS = int(os.environ.get('WEBHOOK_TIMEOUT_SECONDS', '30'))
+
+# Payment Notifications
+SEND_PAYMENT_CONFIRMATIONS = os.environ.get('SEND_PAYMENT_CONFIRMATIONS', 'True').lower() == 'true'
+SEND_PAYOUT_NOTIFICATIONS = os.environ.get('SEND_PAYOUT_NOTIFICATIONS', 'True').lower() == 'true'
+SEND_DISPUTE_ALERTS = os.environ.get('SEND_DISPUTE_ALERTS', 'True').lower() == 'true'
+PAYMENT_ADMIN_EMAILS = os.environ.get('PAYMENT_ADMIN_EMAILS', '').split(',') if os.environ.get('PAYMENT_ADMIN_EMAILS') else []
+
+# NDPR Compliance for Payments
+PAYMENT_DATA_RETENTION_DAYS = int(os.environ.get('PAYMENT_DATA_RETENTION_DAYS', '2555'))  # 7 years
+ANONYMIZE_OLD_PAYMENT_DATA = os.environ.get('ANONYMIZE_OLD_PAYMENT_DATA', 'True').lower() == 'true'
+AUDIT_LOG_RETENTION_DAYS = int(os.environ.get('AUDIT_LOG_RETENTION_DAYS', '2555'))
+
+# Multi-currency Support
+ENABLE_MULTI_CURRENCY_PAYMENTS = os.environ.get('ENABLE_MULTI_CURRENCY_PAYMENTS', 'True').lower() == 'true'
+PAYMENT_DASHBOARD_CACHE_TIMEOUT = int(os.environ.get('PAYMENT_DASHBOARD_CACHE_TIMEOUT', '300'))
+ENABLE_REAL_TIME_PAYMENT_METRICS = os.environ.get('ENABLE_REAL_TIME_PAYMENT_METRICS', 'False').lower() == 'true'
 
 # Logging Configuration
 LOGGING = {

@@ -4,7 +4,10 @@ app_name = 'rides'
 
 urlpatterns = [
     # Include matching URLs
-    path('', include('rides.matching_urls')),
+    path('matching/', include('rides.matching_urls')),
+    
+    # Include workflow URLs
+    path('workflow/', include('rides.workflow_urls')),
     
     # Other ride URLs will be implemented here
 ]

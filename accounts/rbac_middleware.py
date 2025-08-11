@@ -90,22 +90,12 @@ class RBACauditMiddleware(MiddlewareMixin):
             
             SecurityEvent.objects.create(
                 user=request.user if request.user.is_authenticated else None,
-                event_type='request_start',
-                event_category='api_audit',
-                message=f"Request started: {request.method} {request.path}",
+                event_type='suspicious_login',  # Use existing event type
+                severity='low',
+                description=f"Request started: {request.method} {request.path}",
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                endpoint=f"{request.method} {request.path}",
-                metadata={
-                    'method': request.method,
-                    'path': request.path,
-                    'query_params': dict(request.GET),
-                    'content_type': request.content_type,
-                    'user_tier': getattr(request.user, 'tier', None),
-                    'authenticated': request.user.is_authenticated if request.user else False,
-                    'timestamp': timezone.now().isoformat(),
-                    **request_data
-                }
+                session_id=getattr(request.session, 'session_key', '') if hasattr(request, 'session') else '',
             )
         except Exception as e:
             logger.error(f"Failed to log request start: {e}")
@@ -115,22 +105,12 @@ class RBACauditMiddleware(MiddlewareMixin):
         try:
             SecurityEvent.objects.create(
                 user=request.user if request.user.is_authenticated else None,
-                event_type='request_complete',
-                event_category='api_audit',
-                message=f"Request completed: {request.method} {request.path} - {response.status_code}",
+                event_type='suspicious_login',  # Use existing event type
+                severity='low',
+                description=f"Request completed: {request.method} {request.path} - {response.status_code}",
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                endpoint=f"{request.method} {request.path}",
-                metadata={
-                    'method': request.method,
-                    'path': request.path,
-                    'status_code': response.status_code,
-                    'duration_ms': round(duration * 1000, 2) if duration else None,
-                    'response_size': len(response.content) if hasattr(response, 'content') else None,
-                    'user_tier': getattr(request.user, 'tier', None),
-                    'authenticated': request.user.is_authenticated if request.user else False,
-                    'timestamp': timezone.now().isoformat()
-                }
+                session_id=getattr(request.session, 'session_key', '') if hasattr(request, 'session') else '',
             )
         except Exception as e:
             logger.error(f"Failed to log request completion: {e}")
@@ -140,21 +120,12 @@ class RBACauditMiddleware(MiddlewareMixin):
         try:
             SecurityEvent.objects.create(
                 user=request.user if request.user.is_authenticated else None,
-                event_type='request_exception',
-                event_category='api_error',
-                message=f"Request exception: {request.method} {request.path} - {str(exception)}",
+                event_type='suspicious_login',  # Use existing event type
+                severity='high',
+                description=f"Request exception: {request.method} {request.path} - {str(exception)}",
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                endpoint=f"{request.method} {request.path}",
-                metadata={
-                    'method': request.method,
-                    'path': request.path,
-                    'exception_type': type(exception).__name__,
-                    'exception_message': str(exception),
-                    'user_tier': getattr(request.user, 'tier', None),
-                    'authenticated': request.user.is_authenticated if request.user else False,
-                    'timestamp': timezone.now().isoformat()
-                }
+                session_id=getattr(request.session, 'session_key', '') if hasattr(request, 'session') else '',
             )
         except Exception as e:
             logger.error(f"Failed to log request exception: {e}")
@@ -234,25 +205,18 @@ class SecurityMonitoringMiddleware(MiddlewareMixin):
             # Count recent auth failures from this IP
             recent_failures = SecurityEvent.objects.filter(
                 ip_address=ip_address,
-                event_type='authentication_failed',
+                event_type='multiple_failed_logins',
                 created_at__gte=timezone.now() - timezone.timedelta(hours=1)
             ).count()
             
             if recent_failures >= self.RATE_LIMIT_THRESHOLDS['failed_auth_per_hour']:
                 SecurityEvent.objects.create(
                     user=request.user if request.user.is_authenticated else None,
-                    event_type='suspicious_activity',
-                    event_category='security_alert',
-                    message=f"Excessive authentication failures from IP: {ip_address}",
+                    event_type='multiple_failed_logins',
+                    severity='high',
+                    description=f"Excessive authentication failures from IP: {ip_address}",
                     ip_address=ip_address,
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                    endpoint=f"{request.method} {request.path}",
-                    metadata={
-                        'alert_type': 'excessive_auth_failures',
-                        'failure_count': recent_failures,
-                        'threshold': self.RATE_LIMIT_THRESHOLDS['failed_auth_per_hour'],
-                        'timestamp': timezone.now().isoformat()
-                    }
                 )
         except Exception as e:
             logger.error(f"Failed to check auth failures: {e}")
@@ -265,25 +229,18 @@ class SecurityMonitoringMiddleware(MiddlewareMixin):
             # Count recent permission denials from this IP
             recent_denials = SecurityEvent.objects.filter(
                 ip_address=ip_address,
-                event_type='access_denied',
+                event_type='suspicious_login',
                 created_at__gte=timezone.now() - timezone.timedelta(hours=1)
             ).count()
             
             if recent_denials >= self.RATE_LIMIT_THRESHOLDS['permission_denied_per_hour']:
                 SecurityEvent.objects.create(
                     user=request.user if request.user.is_authenticated else None,
-                    event_type='suspicious_activity',
-                    event_category='security_alert',
-                    message=f"Excessive permission denials from IP: {ip_address}",
+                    event_type='suspicious_login',
+                    severity='medium',
+                    description=f"Excessive permission denials from IP: {ip_address}",
                     ip_address=ip_address,
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                    endpoint=f"{request.method} {request.path}",
-                    metadata={
-                        'alert_type': 'excessive_permission_denials',
-                        'denial_count': recent_denials,
-                        'threshold': self.RATE_LIMIT_THRESHOLDS['permission_denied_per_hour'],
-                        'timestamp': timezone.now().isoformat()
-                    }
                 )
         except Exception as e:
             logger.error(f"Failed to check permission denials: {e}")
@@ -296,25 +253,18 @@ class SecurityMonitoringMiddleware(MiddlewareMixin):
             # Count requests from this IP in the last minute
             recent_requests = SecurityEvent.objects.filter(
                 ip_address=ip_address,
-                event_type='request_start',
+                event_type='suspicious_login',
                 created_at__gte=timezone.now() - timezone.timedelta(minutes=1)
             ).count()
             
             if recent_requests >= self.RATE_LIMIT_THRESHOLDS['requests_per_minute']:
                 SecurityEvent.objects.create(
                     user=request.user if request.user.is_authenticated else None,
-                    event_type='suspicious_activity',
-                    event_category='security_alert',
-                    message=f"Rate limit exceeded from IP: {ip_address}",
+                    event_type='rate_limit_exceeded',
+                    severity='medium',
+                    description=f"Rate limit exceeded from IP: {ip_address}",
                     ip_address=ip_address,
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                    endpoint=f"{request.method} {request.path}",
-                    metadata={
-                        'alert_type': 'rate_limit_exceeded',
-                        'request_count': recent_requests,
-                        'threshold': self.RATE_LIMIT_THRESHOLDS['requests_per_minute'],
-                        'timestamp': timezone.now().isoformat()
-                    }
                 )
         except Exception as e:
             logger.error(f"Failed to check rate limits: {e}")

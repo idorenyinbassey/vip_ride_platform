@@ -32,6 +32,9 @@ boto3==1.40.3
 
 # Payment Processing
 requests==2.32.4
+stripe==12.4.0
+pypaystack2==3.0.0
+python-flutterwave==1.2.2
 
 # Task Queue
 flower==2.0.1  # Celery monitoring
@@ -47,3 +50,6 @@ drf-spectacular==0.28.0
 
 # Environment Variables
 python-dotenv==1.1.1
+
+# Authentication & Authorization
+pyotp==2.9.0

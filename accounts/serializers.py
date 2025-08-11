@@ -38,13 +38,36 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
         
     def validate(self, attrs):
         """Enhanced validation with MFA and security checks"""
-        email = attrs.get('email')
+        # Handle both email and username fields
+        email = attrs.get('email') or attrs.get('username')
         password = attrs.get('password')
         device_fingerprint = attrs.get('device_fingerprint', '')
         mfa_token = attrs.get('mfa_token', '')
         
+        # Also check request data if available
+        if hasattr(self.context.get('request'), '_full_data'):
+            request_data = self.context['request']._full_data
+            email = email or request_data.get('email') or request_data.get('username')
+            device_fingerprint = device_fingerprint or request_data.get('device_fingerprint', '')
+        
+        if not email:
+            raise serializers.ValidationError(
+                _('Email or username is required.')
+            )
+        
+        # Ensure email is used for authentication
+        attrs['email'] = email
+        if 'username' in attrs and 'email' not in attrs:
+            attrs['email'] = attrs.pop('username')
+        
         # Get user for validation
         user = User.objects.filter(email=email).first()
+        if not user:
+            # Try finding by username if email lookup fails
+            user = User.objects.filter(username=email).first()
+            if user:
+                attrs['email'] = user.email
+        
         if not user:
             raise serializers.ValidationError(
                 _('No account found with this email address.')
@@ -71,7 +94,7 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
             )
         
         # Check for suspicious login
-        if is_suspicious_login(user, self.ip_address, device_fingerprint):
+        if is_suspicious_login(self.request, user):
             self._log_failed_attempt(email, 'blocked_suspicious')
             raise serializers.ValidationError(
                 _('Login blocked due to suspicious activity. Please try again later.')
@@ -164,14 +187,27 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
     def _verify_totp_token(self, user, token):
         """Verify TOTP token"""
         try:
-            # This would use the MFAToken model
-            # For now, basic validation
-            if len(token) == 6 and token.isdigit():
-                # In production, verify against user's TOTP secret
-                return True
+            # Basic validation first
+            if not token or len(token) != 6 or not token.isdigit():
+                return False
+            
+            # SECURITY: In development/testing, fail explicitly to prevent bypass
+            # TODO: Implement proper TOTP verification with pyotp or similar
+            # For production, this should verify against user's TOTP secret
+            
+            # Development/testing mode - explicitly fail for security
+            if hasattr(user, 'mfa_secret') and user.mfa_secret:
+                # Placeholder for actual TOTP verification
+                # import pyotp
+                # totp = pyotp.TOTP(user.mfa_secret)
+                # return totp.verify(token, valid_window=1)
+                pass
+            
+            # Fail safe - do not allow bypass in any environment
+            return False
+            
         except Exception:
-            pass
-        return False
+            return False
     
     def _verify_backup_code(self, user, code):
         """Verify backup code"""
@@ -219,7 +255,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'email', 'password', 'password_confirm',
+            'email', 'username', 'password', 'password_confirm',
             'first_name', 'last_name', 'phone_number', 'tier'
         ]
     
@@ -235,6 +271,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'email': _('Account with this email already exists.')}
             )
+        
+        # Auto-generate username from email if not provided
+        if not attrs.get('username'):
+            attrs['username'] = attrs['email'].split('@')[0]
+        
+        # Check if username already exists and make it unique
+        base_username = attrs['username']
+        counter = 1
+        while User.objects.filter(username=attrs['username']).exists():
+            attrs['username'] = f"{base_username}{counter}"
+            counter += 1
         
         return attrs
     

@@ -1,0 +1,39 @@
+# Production Requirements
+# Optimized for production deployment
+
+-r base.txt
+
+# Production WSGI Server
+gunicorn==23.0.0
+gevent==24.11.1
+
+# Static File Handling
+whitenoise==6.8.2
+
+# Production Database Adapter
+psycopg2==2.9.9
+
+# Monitoring & Logging
+sentry-sdk[django]==2.18.0
+django-health-check==3.18.3
+
+# Performance
+django-cachalot==2.6.3
+django-compression-middleware==0.5.0
+
+# Security Enhancements
+django-security==0.17.0
+django-csp==3.8
+django-permissions-policy==4.21.0
+
+# SSL/TLS
+pyOpenSSL==24.3.0
+
+# Memory Management
+pympler==0.9
+
+# Process Management
+supervisor==4.2.5
+
+# Production Utilities
+python-memcached==1.62

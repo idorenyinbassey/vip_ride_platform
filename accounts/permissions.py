@@ -44,6 +44,91 @@ class TierBasedPermission(permissions.BasePermission):
         return user_tier_level >= required_tier_level
 
 
+class IsFleetOwner(permissions.BasePermission):
+    """Permission for fleet company owners"""
+    
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+    
+    def has_object_permission(self, request, view, obj):
+        if hasattr(obj, 'owner'):
+            return obj.owner == request.user
+        return False
+
+
+class IsVehicleOwner(permissions.BasePermission):
+    """Permission for vehicle owners"""
+    
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+    
+    def has_object_permission(self, request, view, obj):
+        if hasattr(obj, 'owner'):
+            return obj.owner == request.user
+        return False
+
+
+class IsControlOperator(permissions.BasePermission):
+    """Permission for control center operators"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return hasattr(request.user, 'control_operator')
+
+
+class IsVIPUser(permissions.BasePermission):
+    """Permission for VIP users"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        # Safely get tier from user profile with fallback
+        try:
+            if hasattr(request.user, 'profile') and request.user.profile:
+                return request.user.profile.tier == 'vip'
+            elif hasattr(request.user, 'tier'):
+                return request.user.tier == 'vip'
+            return False
+        except AttributeError:
+            return False
+
+
+class IsPremiumOrVIPUser(permissions.BasePermission):
+    """Permission for Premium or VIP users"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        # Safely get tier from user profile with fallback
+        try:
+            if hasattr(request.user, 'profile') and request.user.profile:
+                tier = request.user.profile.tier
+            elif hasattr(request.user, 'tier'):
+                tier = request.user.tier
+            else:
+                tier = 'normal'
+            return tier in ['premium', 'vip']
+        except AttributeError:
+            return False
+
+
+class IsConciergeUser(permissions.BasePermission):
+    """Permission for concierge (driver) users"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return hasattr(request.user, 'driver_profile')
+
+
+class IsAdminUser(permissions.BasePermission):
+    """Permission for admin users"""
+    
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_superuser
+
+
 class MFARequiredPermission(permissions.BasePermission):
     """Permission class that enforces MFA verification"""
     
@@ -649,42 +734,3 @@ class IsNormalUser(AuditedTierPermission):
 class IsPremiumUser(AuditedTierPermission):
     """Permission for premium tier users and above"""
     required_tier = 'premium'
-
-
-class IsVIPUser(AuditedTierPermission):
-    """Permission for VIP tier users and above"""
-    required_tier = 'vip'
-
-
-class IsConciergeUser(AuditedTierPermission):
-    """Permission for concierge tier users and above"""
-    required_tier = 'concierge'
-
-
-class IsAdminUser(AuditedTierPermission):
-    """Permission for admin users"""
-    required_tier = 'admin'
-
-
-class IsPremiumOrVIPUser(permissions.BasePermission):
-    """Permission for premium or VIP users (for GPS encryption)"""
-    
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        
-        allowed = request.user.tier in ['premium', 'vip', 'concierge', 'admin']
-        
-        # Log the permission check
-        try:
-            SecurityEvent.objects.create(
-                user=request.user,
-                event_type='access_granted' if allowed else 'access_denied',
-                
-                description=f'GPS encryption access {"granted" if allowed else "denied"} for tier {request.user.tier}',
-                ip_address=request.META.get('REMOTE_ADDR'),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),            )
-        except Exception as e:
-            logger.error(f"Failed to log GPS encryption access: {e}")
-        
-        return allowed

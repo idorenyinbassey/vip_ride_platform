@@ -46,15 +46,41 @@ class TierBasedTokenObtainPairView(TokenObtainPairView):
     
     def post(self, request, *args, **kwargs):
         """Handle login with enhanced security"""
-        # Add device fingerprint to request data
-        if 'device_fingerprint' not in request.data:
-            request.data['device_fingerprint'] = get_device_fingerprint(request)
-        
-        # Rate limiting check
-        if not self._check_rate_limit(request):
+        try:
+            # Rate limiting check
+            if not self._check_rate_limit(request):
+                return Response(
+                    {'error': _('Too many login attempts. Please try again later.')},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+            
+            # Create mutable copy of request data
+            mutable_data = request.data.copy()
+            
+            # Add device fingerprint to request data
+            if 'device_fingerprint' not in mutable_data:
+                mutable_data['device_fingerprint'] = get_device_fingerprint(request)
+            
+            # Handle the case where username is provided instead of email
+            if 'username' in mutable_data and 'email' not in mutable_data:
+                mutable_data['email'] = mutable_data['username']
+            
+            # Create a new request-like object with modified data
+            request._full_data = mutable_data
+            
+            response = super().post(request, *args, **kwargs)
+            
+            # Add security headers
+            response['X-Frame-Options'] = 'DENY'
+            response['X-Content-Type-Options'] = 'nosniff'
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
             return Response(
-                {'error': _('Too many login attempts. Please try again later.')},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
+                {'error': _('Login failed. Please check your credentials.')},
+                status=status.HTTP_400_BAD_REQUEST
             )
         
         try:

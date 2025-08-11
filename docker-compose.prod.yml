@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/var/www/static
+      - media_volume:/var/www/media
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.prod
+    expose:
+      - "8000"
+    volumes:
+      - static_volume:/code/staticfiles
+      - media_volume:/code/media
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgresql://vipride:${DB_PASSWORD}@db:5432/vipride_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - SECURE_SSL_REDIRECT=True
+      - SESSION_COOKIE_SECURE=True
+      - CSRF_COOKIE_SECURE=True
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    depends_on:
+      - db
+      - redis
+    command: gunicorn vip_ride_platform.wsgi:application --bind 0.0.0.0:8000 --workers 4
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=vipride_db
+      - POSTGRES_USER=vipride
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  celery:
+    build: 
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A vip_ride_platform worker -l info
+    volumes:
+      - .:/code
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgresql://vipride:${DB_PASSWORD}@db:5432/vipride_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  flower:
+    build: 
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A vip_ride_platform flower
+    ports:
+      - "5555:5555"
+    environment:
+      - DEBUG=False
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

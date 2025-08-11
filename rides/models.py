@@ -9,14 +9,24 @@ import json
 
 
 class RideStatus(models.TextChoices):
+    """Enhanced ride status choices for workflow system"""
     REQUESTED = 'requested', 'Ride Requested'
-    ACCEPTED = 'accepted', 'Driver Accepted'
-    DRIVER_ARRIVING = 'driver_arriving', 'Driver Arriving'
+    DRIVER_SEARCH = 'driver_search', 'Searching for Driver'
+    DRIVER_FOUND = 'driver_found', 'Driver Found'
+    DRIVER_ACCEPTED = 'driver_accepted', 'Driver Accepted'
+    DRIVER_REJECTED = 'driver_rejected', 'Driver Rejected'
+    DRIVER_EN_ROUTE = 'driver_en_route', 'Driver En Route'
+    DRIVER_ARRIVED = 'driver_arrived', 'Driver Arrived'
     IN_PROGRESS = 'in_progress', 'Ride In Progress'
     COMPLETED = 'completed', 'Completed'
-    CANCELLED_BY_CUSTOMER = 'cancelled_by_customer', 'Cancelled by Customer'
+    CANCELLED_BY_RIDER = 'cancelled_by_rider', 'Cancelled by Rider'
     CANCELLED_BY_DRIVER = 'cancelled_by_driver', 'Cancelled by Driver'
-    NO_DRIVER_FOUND = 'no_driver_found', 'No Driver Found'
+    CANCELLED_BY_SYSTEM = 'cancelled_by_system', 'Cancelled by System'
+    PAYMENT_PENDING = 'payment_pending', 'Payment Pending'
+    PAYMENT_FAILED = 'payment_failed', 'Payment Failed'
+    PAYMENT_COMPLETED = 'payment_completed', 'Payment Completed'
+    DISPUTED = 'disputed', 'Disputed'
+    REFUNDED = 'refunded', 'Refunded'
 
 
 class RideType(models.TextChoices):
@@ -39,18 +49,28 @@ class Ride(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Parties
-    customer = models.ForeignKey(
+    rider = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='customer_rides'
+        related_name='rider_rides'
     )
     driver = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'accounts.Driver',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='driver_rides'
     )
+    
+    # Timing - Enhanced for workflow
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    driver_accepted_at = models.DateTimeField(null=True, blank=True)
+    driver_en_route_at = models.DateTimeField(null=True, blank=True)
+    driver_arrived_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     vehicle = models.ForeignKey(
         Vehicle,
         on_delete=models.SET_NULL,
@@ -72,7 +92,7 @@ class Ride(models.Model):
         choices=RideType.choices,
         default=RideType.NORMAL
     )
-    customer_tier = models.CharField(
+    rider_tier = models.CharField(
         max_length=10,
         choices=UserTier.choices,
         default=UserTier.NORMAL
@@ -82,6 +102,10 @@ class Ride(models.Model):
         choices=RideStatus.choices,
         default=RideStatus.REQUESTED
     )
+    
+    # Workflow tracking
+    workflow_step = models.CharField(max_length=50, blank=True)
+    auto_transitions_enabled = models.BooleanField(default=True)
     
     # Billing Model
     billing_model = models.CharField(
@@ -238,7 +262,7 @@ class Ride(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='monitored_rides'
+        related_name='assigned_monitoring_rides'
     )
     
     # Cancellation
@@ -285,14 +309,14 @@ class Ride(models.Model):
     class Meta:
         db_table = 'rides'
         indexes = [
-            models.Index(fields=['customer']),
+            models.Index(fields=['rider']),
             models.Index(fields=['driver']),
             models.Index(fields=['vehicle']),
             models.Index(fields=['fleet_company']),
             models.Index(fields=['status']),
-            models.Index(fields=['requested_at']),
+            models.Index(fields=['created_at']),
             models.Index(fields=['ride_type']),
-            models.Index(fields=['customer_tier']),
+            models.Index(fields=['rider_tier']),
             models.Index(fields=['billing_model']),
             models.Index(fields=['vip_priority_level']),
             models.Index(fields=['is_sos_triggered']),
@@ -300,11 +324,11 @@ class Ride(models.Model):
         ]
     
     def __str__(self):
-        return f'Ride {self.id} - {self.customer.email} - {self.get_status_display()}'
+        return f'Ride {self.id} - {self.rider.email} - {self.get_status_display()}'
     
     def encrypt_gps_data(self, data):
         """Encrypt GPS data for VIP users using AES-256-GCM"""
-        if self.customer_tier == UserTier.VIP:
+        if self.rider_tier == UserTier.VIP:
             try:
                 from django.conf import settings
                 # Use base64 encoded key for Fernet
@@ -321,7 +345,7 @@ class Ride(models.Model):
     
     def decrypt_gps_data(self, encrypted_data):
         """Decrypt GPS data for VIP users"""
-        if encrypted_data and self.customer_tier == UserTier.VIP:
+        if encrypted_data and self.rider_tier == UserTier.VIP:
             try:
                 from django.conf import settings
                 import base64
@@ -341,7 +365,7 @@ class Ride(models.Model):
     
     def trigger_sos(self):
         """Trigger SOS emergency protocol"""
-        if self.customer_tier == UserTier.VIP:
+        if self.rider_tier == UserTier.VIP:
             self.is_sos_triggered = True
             self.sos_triggered_at = timezone.now()
             self.save()
@@ -360,6 +384,24 @@ class Ride(models.Model):
             return self._calculate_premium_fare()
         else:
             return self._calculate_standard_fare()
+    
+    def calculate_final_fare(self):
+        """Calculate and set final fare - called by workflow on completion"""
+        calculated_fare = self.calculate_flexible_fare()
+        self.total_fare = calculated_fare
+        
+        # Calculate commission breakdown
+        commission_rate = float(self.platform_commission_rate) / 100
+        self.platform_commission = calculated_fare * commission_rate
+        self.driver_earnings = calculated_fare - self.platform_commission
+        
+        # Fleet company commission if applicable
+        if self.fleet_company:
+            fleet_rate = float(getattr(self.fleet_company, 'commission_rate', 10)) / 100
+            self.fleet_commission = calculated_fare * fleet_rate
+            self.driver_earnings -= self.fleet_commission
+        
+        self.save()
     
     def _calculate_engine_based_fare(self):
         """Calculate fare based on vehicle engine type"""
@@ -395,9 +437,9 @@ class Ride(models.Model):
         """Calculate fare with premium multipliers"""
         base_fare = self._calculate_standard_fare()
         
-        if self.customer_tier == UserTier.PREMIUM:
+        if self.rider_tier == UserTier.PREMIUM:
             return base_fare * 1.5
-        elif self.customer_tier == UserTier.VIP:
+        elif self.rider_tier == UserTier.VIP:
             return base_fare * 2.0
         
         return base_fare
@@ -423,11 +465,11 @@ class Ride(models.Model):
     
     @property
     def is_vip_ride(self):
-        return self.customer_tier == UserTier.VIP
+        return self.rider_tier == UserTier.VIP
     
     @property
     def requires_encrypted_tracking(self):
-        return self.customer_tier == UserTier.VIP
+        return self.rider_tier == UserTier.VIP
     
     def get_encrypted_location_data(self):
         """Get encrypted location data for VIP rides"""
@@ -498,7 +540,7 @@ class RideTracking(models.Model):
     
     def save(self, *args, **kwargs):
         # Encrypt location data for VIP rides
-        if self.ride.customer_tier == UserTier.VIP:
+        if self.ride.rider_tier == UserTier.VIP:
             location_data = {
                 'lat': str(self.latitude),
                 'lng': str(self.longitude),
@@ -633,7 +675,7 @@ class RideMatchingLog(models.Model):
     )
     
     # Additional context
-    customer_tier = models.CharField(max_length=20)
+    rider_tier = models.CharField(max_length=20)
     ride_type = models.CharField(max_length=30)
     
     class Meta:
