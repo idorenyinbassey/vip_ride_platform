@@ -18,25 +18,96 @@
   <meta property="og:image" content="/static/og.jpg" />
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+  <script>
+    // Tailwind color palette for VIP Ride
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBlack: '#0b0b0b',
+            brandBlue: '#1e40af',
+            brandBlueLight: '#93c5fd',
+            turquoise: '#14b8a6',
+            brown: '#8b5e3c',
+            brownLight: '#d2b48c',
+            ash: '#e5e7eb',
+            ashLight: '#f1f5f9',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- HTMX removed: using lightweight fetch helpers instead -->
   <script>
     document.documentElement.classList.add('h-full');
+    // CSRF helper for fetch POST requests
+    function getCookie(name){
+      try {
+        const parts = document.cookie.split(';');
+        for (let i=0; i<parts.length; i++){
+          const part = parts[i].trim();
+          if (!part) continue;
+          const eq = part.indexOf('=');
+          if (eq === -1) continue;
+          const key = part.slice(0, eq);
+          if (key === name){
+            const val = part.slice(eq+1);
+            try { return decodeURIComponent(val); } catch(_) { return val; }
+          }
+        }
+      } catch(e) { console.error('Cookie parse error', e); }
+      return '';
+    }
+    window.postForm = async function(form){
+      const url = form.getAttribute('action') || window.location.href;
+      const fd = new FormData(form);
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'HX-Request': 'true'
+          },
+          body: fd
+        });
+        const html = await res.text();
+        return { ok: res.ok, status: res.status, html };
+      } catch (err) {
+        console.error('postForm failed', err);
+        const safeMsg = (err && err.message) ? err.message : 'Network error';
+        return {
+          ok: false,
+          status: 0,
+          html: `<div class="p-3 rounded bg-red-50 text-red-700">Request failed: ${safeMsg}</div>`,
+          error: safeMsg
+        };
+      }
+    }
+    window.getFragment = async function(url, params){
+      const qs = new URLSearchParams(params || {}).toString();
+      const finalUrl = qs ? (url + (url.includes('?') ? '&' : '?') + qs) : url;
+      const res = await fetch(finalUrl, { headers: { 'HX-Request': 'true' } });
+      const html = await res.text();
+      return { ok: res.ok, html };
+    }
   </script>
   {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen flex flex-col text-gray-900">
-  <header class="border-b">
+<body class="min-h-screen flex flex-col bg-ashLight text-gray-900">
+  <header class="sticky top-0 z-40 bg-brandBlue/80 text-white backdrop-blur supports-[backdrop-filter]:bg-brandBlue/60 border-b border-white/10">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-  <a href="{% url 'marketing:home' %}" class="font-bold text-xl">VIP Ride</a>
-      <nav class="flex items-center gap-4">
-        <a href="{% url 'marketing:pricing' %}" class="hover:text-blue-600">{% trans "Pricing" %}</a>
-        <a href="{% url 'marketing:drivers' %}" class="hover:text-blue-600">{% trans "Drivers" %}</a>
-        <a href="{% url 'marketing:hotels' %}" class="hover:text-blue-600">{% trans "Hotels" %}</a>
-        <a href="{% url 'marketing:contact' %}" class="hover:text-blue-600">{% trans "Contact" %}</a>
-  <a href="{% url 'marketing:login' %}" class="hover:text-blue-600">{% trans "Login" %}</a>
-  <a href="{% url 'marketing:signup' %}" class="hover:text-blue-600">{% trans "Sign up" %}</a>
-        <form method="post" action="{% url 'set_language' %}" class="inline">{% csrf_token %}
-          <select name="language" class="border rounded p-1" onchange="this.form.submit()">
+      <a href="{% url 'marketing:home' %}" class="font-bold text-xl tracking-tight text-white">VIP Ride</a>
+      <button id="nav-toggle" class="md:hidden inline-flex items-center justify-center w-10 h-10 border border-white/30 rounded" aria-label="Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <nav id="nav-main" class="hidden md:flex items-center gap-5">
+        <a href="{% url 'marketing:drivers' %}" class="text-white/90 hover:text-white">{% trans "Drivers" %}</a>
+        <a href="{% url 'marketing:hotels' %}" class="text-white/90 hover:text-white">{% trans "Hotels" %}</a>
+        <a href="{% url 'marketing:contact' %}" class="text-white/90 hover:text-white">{% trans "Contact" %}</a>
+        <a href="{% url 'marketing:login' %}" class="text-white/90 hover:text-white">{% trans "Login" %}</a>
+        <a href="{% url 'marketing:signup' %}" class="px-3 py-1.5 rounded bg-turquoise text-black hover:bg-brandBlueLight transition">{% trans "Sign up" %}</a>
+        <form method="post" action="{% url 'set_language' %}" class="hidden lg:inline">{% csrf_token %}
+          <select name="language" class="border border-white/30 bg-transparent text-white rounded p-1 text-sm" onchange="this.form.submit()">
             <option value="en">English</option>
             <option value="fr">Français</option>
             <option value="ar">العربية</option>
@@ -44,16 +115,61 @@
         </form>
       </nav>
     </div>
+    <nav id="nav-mobile" class="md:hidden hidden bg-brandBlue text-white">
+      <div class="px-4 py-3 flex flex-col gap-3">
+        <a href="{% url 'marketing:drivers' %}" class="text-white/90 hover:text-white">{% trans "Drivers" %}</a>
+        <a href="{% url 'marketing:hotels' %}" class="text-white/90 hover:text-white">{% trans "Hotels" %}</a>
+        <a href="{% url 'marketing:contact' %}" class="text-white/90 hover:text-white">{% trans "Contact" %}</a>
+        <a href="{% url 'marketing:login' %}" class="text-white/90 hover:text-white">{% trans "Login" %}</a>
+        <a href="{% url 'marketing:signup' %}" class="px-3 py-2 rounded bg-turquoise text-black inline-block w-max">{% trans "Sign up" %}</a>
+        <form method="post" action="{% url 'set_language' %}">{% csrf_token %}
+          <select name="language" class="border border-white/30 bg-transparent text-white rounded p-1 text-sm" onchange="this.form.submit()">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+          </select>
+        </form>
+      </div>
+    </nav>
+    <script>
+      (function(){
+        var btn = document.getElementById('nav-toggle');
+        var m = document.getElementById('nav-mobile');
+        var d = document.getElementById('nav-main');
+        if(btn){ btn.addEventListener('click', function(){ m.classList.toggle('hidden'); }); }
+      })();
+    </script>
   </header>
 
   <main class="flex-1">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="border-t">
-    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-gray-600">
-  <p>&copy; {% now "Y" %} VIP Ride Platform. {% trans "All rights reserved." %}</p>
+  <footer class="bg-brandBlack text-ash">
+    <div class="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-8 text-sm">
+      <div>
+        <div class="font-semibold mb-2 text-white">VIP Ride</div>
+        <p class="text-ash">{% trans "Luxury ride-hailing with premium and VIP experiences, hotel partners, and encrypted GPS safety." %}</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-2 text-white">{% trans "Company" %}</div>
+        <ul class="space-y-1">
+          <li><a href="{% url 'marketing:drivers' %}" class="hover:text-turquoise">{% trans "Drivers" %}</a></li>
+          <li><a href="{% url 'marketing:hotels' %}" class="hover:text-turquoise">{% trans "Hotels" %}</a></li>
+          <li><a href="{% url 'marketing:contact' %}" class="hover:text-turquoise">{% trans "Contact" %}</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold mb-2 text-white">{% trans "Follow us" %}</div>
+        <div class="flex gap-4 text-ash">
+          <a href="https://facebook.com" aria-label="Facebook" class="hover:text-turquoise">FB</a>
+          <a href="https://twitter.com" aria-label="Twitter" class="hover:text-turquoise">X</a>
+          <a href="https://instagram.com" aria-label="Instagram" class="hover:text-turquoise">IG</a>
+          <a href="https://discord.com" aria-label="Discord" class="hover:text-turquoise">DC</a>
+        </div>
+      </div>
     </div>
+    <div class="text-center text-xs text-ash pb-6">&copy; {% now "Y" %} VIP Ride Platform. {% trans "All rights reserved." %}</div>
   </footer>
 
   <script type="application/ld+json">

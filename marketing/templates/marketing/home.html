@@ -2,65 +2,126 @@
 {% load i18n %}
 {% block title %}{% trans "VIP Ride — Luxury, Secure, Effortless" %}{% endblock %}
 {% block content %}
-<section class="bg-gradient-to-b from-blue-50 to-white">
-  <div class="max-w-7xl mx-auto px-4 py-20 grid md:grid-cols-2 gap-8 items-center">
+<section class="bg-gradient-to-b from-[#F8FAFF] to-white">
+  <div class="max-w-7xl mx-auto px-4 py-20 grid md:grid-cols-2 gap-10 items-center">
     <div>
-      <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
-        {% trans "Your VIP Journey, Elevated" %}
+      <h1 class="text-5xl leading-tight font-extrabold mb-4 tracking-tight">
+        {% trans "Luxury rides. VIP safety. Hotel-grade service." %}
       </h1>
-      <p class="text-lg text-gray-700 mb-6">
-        {% trans "Encrypted GPS, trusted drivers, hotel partnerships, and a control center for safety." %}
+      <p class="text-lg text-gray-700 mb-6 max-w-prose">
+        {% trans "A modern ride-hailing experience with encrypted GPS, trusted drivers, concierge support, and premium hotel partnerships." %}
       </p>
-    <div class="flex gap-3 flex-wrap">
-  <a href="{% url 'marketing:pricing' %}" class="px-5 py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700">{% trans "See Pricing" %}</a>
-  <a href="{% url 'marketing:drivers' %}" class="px-5 py-3 border rounded hover:bg-gray-50">{% trans "Become a Driver" %}</a>
-  <a href="{% url 'marketing:signup' %}" class="px-5 py-3 border rounded hover:bg-gray-50">{% trans "Sign up" %}</a>
-  <a href="{% url 'marketing:login' %}" class="px-5 py-3 border rounded hover:bg-gray-50">{% trans "Login" %}</a>
+      <div class="flex gap-3 flex-wrap">
+        <a href="{% url 'marketing:signup' %}" class="px-5 py-3 bg-black text-white rounded hover:bg-black/90">{% trans "Get started" %}</a>
+        <a href="{% url 'marketing:drivers' %}" class="px-5 py-3 border rounded hover:bg-gray-50">{% trans "Become a Driver" %}</a>
       </div>
     </div>
-    <div class="relative">
-      <div class="aspect-video w-full rounded-lg bg-gray-200"></div>
+    <div class="border rounded-xl p-6 shadow-sm bg-white">
+      <div class="flex items-center justify-between mb-3">
+        <div class="font-semibold">{% trans "Instant Fare Estimate" %}</div>
+        <div class="text-xs text-gray-500">{% trans "Live" %}</div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="text-sm">
+          <span class="block text-gray-700">{% trans "Tier" %}</span>
+          <select id="tier" class="mt-1 w-full border rounded p-2">
+            <option value="normal">{% trans "Normal" %}</option>
+            <option value="premium">{% trans "Premium" %}</option>
+            <option value="vip">{% trans "VIP" %}</option>
+          </select>
+        </label>
+        <label class="text-sm">
+          <span class="block text-gray-700">{% trans "Distance (km)" %}</span>
+          <input id="distance" type="number" value="10" min="1" class="mt-1 w-full border rounded p-2" />
+        </label>
+        <div class="flex items-end">
+          <button id="calcBtn" class="w-full bg-black text-white rounded py-2">{% trans "Calculate" %}</button>
+        </div>
+      </div>
+      <div id="pricing-result" class="mt-4 text-sm text-gray-700">
+        {% include 'marketing/_pricing_result.html' %}
+      </div>
     </div>
   </div>
 </section>
 
-<section class="max-w-7xl mx-auto px-4 py-16">
-  <h2 class="text-2xl font-bold mb-6">{% trans "Choose Your Tier" %}</h2>
-  <div class="grid md:grid-cols-3 gap-6">
-    <div class="border rounded-lg p-6">
-      <h3 class="font-semibold text-xl mb-2">{% trans "Normal" %}</h3>
-      <ul class="list-disc pl-5 text-gray-700 space-y-1">
-        <li>{% trans "Standard rides, best value" %}</li>
-        <li>{% trans "15-20% commission" %}</li>
-      </ul>
-    </div>
-    <div class="border rounded-lg p-6">
-      <h3 class="font-semibold text-xl mb-2">{% trans "Premium" %}</h3>
-      <ul class="list-disc pl-5 text-gray-700 space-y-1">
-        <li>{% trans "Luxury cars + hotel booking" %}</li>
-        <li>{% trans "20-25% commission" %}</li>
-      </ul>
-    </div>
-    <div class="border-2 border-blue-600 rounded-lg p-6">
-      <h3 class="font-semibold text-xl mb-2">{% trans "VIP" %}</h3>
-      <ul class="list-disc pl-5 text-gray-700 space-y-1">
-        <li>{% trans "Encrypted GPS + SOS" %}</li>
-        <li>{% trans "Trusted drivers" %}</li>
-        <li>{% trans "Priority support" %}</li>
-      </ul>
-    </div>
+<section class="max-w-7xl mx-auto px-4 py-16 grid md:grid-cols-3 gap-8">
+  <div class="space-y-2">
+    <h3 class="font-semibold text-lg">{% trans "For Riders" %}</h3>
+    <p class="text-gray-600">{% trans "Premium and VIP tiers with encrypted GPS, SOS, and trusted drivers." %}</p>
+    <ul class="list-disc pl-5 text-gray-700 space-y-1">
+      <li>{% trans "Real-time tracking and ETA" %}</li>
+      <li>{% trans "Priority support (VIP)" %}</li>
+      <li>{% trans "Hotel concierge integration" %}</li>
+    </ul>
   </div>
-  <div class="mt-6 flex gap-3">
-    <a href="{% url 'marketing:pricing' %}?tier=normal" class="px-4 py-2 border rounded hover:bg-gray-50">{% trans "Choose Normal" %}</a>
-    <a href="{% url 'marketing:pricing' %}?tier=premium" class="px-4 py-2 border rounded hover:bg-gray-50">{% trans "Choose Premium" %}</a>
-    <a href="{% url 'marketing:pricing' %}?tier=vip" class="px-4 py-2 border rounded hover:bg-gray-50">{% trans "Choose VIP" %}</a>
+  <div class="space-y-2">
+    <h3 class="font-semibold text-lg">{% trans "Hotel Partnerships" %}</h3>
+    <p class="text-gray-600">{% trans "Dedicated VIP fleet, unified billing, and concierge dashboards." %}</p>
+    <ul class="list-disc pl-5 text-gray-700 space-y-1">
+      <li>{% trans "Priority pickup lanes" %}</li>
+      <li>{% trans "Revenue sharing" %}</li>
+      <li>{% trans "Guest loyalty perks" %}</li>
+    </ul>
+  </div>
+  <div class="space-y-2">
+    <h3 class="font-semibold text-lg">{% trans "For Drivers & Fleets" %}</h3>
+    <p class="text-gray-600">{% trans "Category-specific onboarding, fleet tools, and performance insights." %}</p>
+    <ul class="list-disc pl-5 text-gray-700 space-y-1">
+      <li>{% trans "Earnings analytics" %}</li>
+      <li>{% trans "Vehicle management" %}</li>
+      <li>{% trans "Subscription tiers" %}</li>
+    </ul>
   </div>
 </section>
 
 <section class="max-w-7xl mx-auto px-4 pb-20">
-  <h2 class="text-2xl font-bold mb-6">{% trans "Interactive Pricing" %}</h2>
-  <div id="pricing-widget" class="border rounded-lg p-6" hx-get="{% url 'marketing:pricing' %}" hx-trigger="load" hx-target="#pricing-widget" hx-swap="outerHTML">
-    <p class="text-gray-600">{% trans "Loading pricing..." %}</p>
+  <div class="border rounded-xl p-8 bg-[#F8FAFF]">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h3 class="font-semibold text-lg">{% trans "Follow our journey" %}</h3>
+        <p class="text-gray-600">{% trans "Product updates, hotel partners, and community events." %}</p>
+      </div>
+      <div class="flex gap-3">
+        <a class="px-3 py-2 border rounded" href="https://facebook.com">Facebook</a>
+        <a class="px-3 py-2 border rounded" href="https://twitter.com">Twitter</a>
+        <a class="px-3 py-2 border rounded" href="https://instagram.com">Instagram</a>
+        <a class="px-3 py-2 border rounded" href="https://discord.com">Discord</a>
+      </div>
+    </div>
   </div>
 </section>
+
+<script>
+  (function(){
+    const tier = document.getElementById('tier');
+    const distance = document.getElementById('distance');
+    const btn = document.getElementById('calcBtn');
+    const target = document.getElementById('pricing-result');
+    let ph;
+    async function update(){
+      try {
+        const r = await getFragment('{% url 'marketing:pricing' %}', { tier: tier.value, distance: distance.value });
+        if (r && r.ok){
+          target.innerHTML = r.html;
+        } else if (r) {
+          target.innerHTML = `<div class="p-3 rounded bg-red-50 text-red-700">Unable to fetch pricing. Please try again.</div>`;
+        }
+      } catch (e) {
+        console.error('pricing update failed', e);
+        // keep previous content, but show a small notice
+        const msg = document.createElement('div');
+        msg.className = 'mt-2 text-sm text-red-600';
+        msg.textContent = 'Network error. Please retry.';
+        target.appendChild(msg);
+      }
+    }
+    btn.addEventListener('click', update);
+    distance.addEventListener('input', function(){
+      clearTimeout(ph);
+      ph = setTimeout(update, 300);
+    });
+    tier.addEventListener('change', update);
+  })();
+</script>
 {% endblock %}

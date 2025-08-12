@@ -5,7 +5,7 @@
 <div class="max-w-7xl mx-auto px-4 py-12">
   <h1 class="text-3xl font-bold mb-6">{% trans "Partner with VIP Ride" %}</h1>
   <div class="grid md:grid-cols-2 gap-8 items-start">
-    <div class="prose">
+  <div class="prose">
       <p>{% trans "Join our hotel partnership program for premium guest transport, priority pickups, and unified billing." %}</p>
       <ul class="list-disc pl-5">
         <li>{% trans "Dedicated VIP fleet and concierge" %}</li>
@@ -13,10 +13,60 @@
         <li>{% trans "Custom hotel dashboards" %}</li>
       </ul>
     </div>
-  <form method="post" action="{% url 'marketing:submit_hotel_partner' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
-      {{ form.as_p }}
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Request Partnership" %}</button>
-    </form>
+    <div id="hotel-form" class="border border-ash rounded p-6 bg-white shadow-sm space-y-4">
+      <form method="post" action="{% url 'marketing:submit_hotel_partner' %}" onsubmit="return false;" class="form-styled space-y-4">{% csrf_token %}
+        {{ form.as_p }}
+        <button type="button" class="px-4 py-2 rounded bg-brandBlue text-white hover:bg-brandBlueLight"
+          onclick="postForm(this.closest('form')).then(r=>{document.getElementById('hotel-form').innerHTML=r.html;});">
+          {% trans "Request Partnership" %}
+        </button>
+      </form>
+      <script>
+        (function(){
+          const container = document.getElementById('hotel-form');
+          function styleForm(el){
+            if(!el) return;
+            var inputs = el.querySelectorAll('input, select, textarea');
+            inputs.forEach(function(i){
+              i.classList.add(
+                'block','w-full','rounded','border','border-ash','bg-white',
+                'px-3','py-2','focus:outline-none','focus:ring-2',
+                'focus:ring-turquoise','focus:border-brandBlue'
+              );
+            });
+            var labels = el.querySelectorAll('label');
+            labels.forEach(function(l){ l.classList.add('block','text-sm','font-medium','text-gray-700','mb-1'); });
+            var ps = el.querySelectorAll('p');
+            ps.forEach(function(p){ p.classList.add('space-y-1'); });
+          }
+          function bind(form){
+            if(!form) return;
+            styleForm(form);
+            form.addEventListener('submit', async function(ev){
+              ev.preventDefault();
+              const submitBtn = form.querySelector('button[type="submit"], button[type="button"]');
+              if (submitBtn){ submitBtn.disabled = true; submitBtn.classList.add('opacity-50','cursor-not-allowed'); }
+              try {
+                const r = await postForm(form);
+                if (r && r.html){ container.innerHTML = r.html; }
+              } catch (e) {
+                console.error('hotel partner submit failed', e);
+                const err = document.createElement('div');
+                err.className = 'p-3 rounded bg-red-50 text-red-700';
+                err.textContent = 'Network error. Please try again.';
+                container.appendChild(err);
+              } finally {
+                // Re-bind on the new form if replaced
+                const newForm = container.querySelector('form');
+                if (newForm && newForm !== form){ bind(newForm); }
+                else if (submitBtn){ submitBtn.disabled = false; submitBtn.classList.remove('opacity-50','cursor-not-allowed'); }
+              }
+            });
+          }
+          bind(container.querySelector('form'));
+        })();
+      </script>
+    </div>
   </div>
 </div>
 {% endblock %}

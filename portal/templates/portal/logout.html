@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>Logging out…</title>
+  <script>
+    (function(){
+      try { localStorage.removeItem('tokens'); } catch(_){}
+      try { sessionStorage.removeItem('tokens'); } catch(_){}
+      if (window.API && window.API.setTokens) { try { window.API.setTokens(null); } catch(_){} }
+      location.replace('/login/');
+    })();
+  </script>
+</head>
+<body>
+  Logging out…
+</body>
+</html>

@@ -16,11 +16,28 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Root logout redirects to portal logout
+    path(
+        'logout/',
+        RedirectView.as_view(
+            pattern_name='portal:logout', permanent=False, query_string=True
+        ),
+        name='logout_redirect'
+    ),
+    # Common auth path alias to marketing login
+    path(
+        'accounts/login/',
+        RedirectView.as_view(
+            pattern_name='marketing:login', permanent=False, query_string=True
+        ),
+        name='accounts_login_alias'
+    ),
     # Marketing site
     path('', include('marketing.urls')),
     # Web portal (client + driver)

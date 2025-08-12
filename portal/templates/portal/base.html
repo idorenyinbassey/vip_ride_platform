@@ -1,54 +1,177 @@
 {% load i18n %}
+{% load static %}
 <!doctype html>
 <html lang="en" class="h-full">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>{% block title %}Portal{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBlack: '#0b0b0b',
+            brandBlue: '#1e40af',
+            brandBlueLight: '#93c5fd',
+            turquoise: '#14b8a6',
+            brown: '#8b5e3c',
+            brownLight: '#d2b48c',
+            ash: '#e5e7eb',
+            ashLight: '#f1f5f9',
+          }
+        }
+      }
+    }
+  </script>
   <style>
     :root{
-      --brand:#0ea5e9; /* sky-500 */
-      --brand-dark:#0284c7; /* sky-600 */
-      --accent:#22c55e; /* green-500 */
+      /* Map CSS variables to the new palette */
+      --brand:#1e40af; /* brandBlue */
+      --brand-dark:#0b0b0b; /* brandBlack */
+      --accent:#14b8a6; /* turquoise */
       --muted:#64748b; /* slate-500 */
     }
   </style>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="{% static 'portal/js/api.js' %}"></script>
+  <script>
+    (function(){
+      function readStoredTokens(){
+        try {
+          const mode = localStorage.getItem('tokens_persist');
+          if (mode === 'local') {
+            const raw = localStorage.getItem('tokens');
+            return raw ? JSON.parse(raw) : null;
+          }
+          const raw = sessionStorage.getItem('tokens') || localStorage.getItem('tokens');
+          return raw ? JSON.parse(raw) : null;
+        } catch(_) { return null; }
+      }
+      function writeStoredTokens(tokens){
+        const mode = localStorage.getItem('tokens_persist');
+        const store = mode === 'local' ? localStorage : sessionStorage;
+        try { store.setItem('tokens', JSON.stringify(tokens)); } catch(_){ }
+      }
+      function clearStoredTokens(){
+        try { localStorage.removeItem('tokens'); } catch(_){}
+        try { sessionStorage.removeItem('tokens'); } catch(_){}
+      }
+      function decodeJwt(t){
+        try {
+          const parts = String(t || '').split('.');
+          if (parts.length !== 3) return null;
+          const json = atob(parts[1].replace(/-/g,'+').replace(/_/g,'/'));
+          return JSON.parse(json);
+        } catch(_) { return null; }
+      }
+      let refreshLock = null;
+      async function refreshIfNeeded(tokens){
+        if (!tokens || !tokens.access) return null;
+        const payload = decodeJwt(tokens.access);
+        const now = Math.floor(Date.now()/1000);
+        if (!payload || !payload.exp || payload.exp > now + 15) return tokens; // 15s buffer
+        if (!tokens.refresh) return null;
+        if (refreshLock){
+          try { return await refreshLock; } catch(_) { return null; }
+        }
+        refreshLock = (async function(){
+          try {
+            const r = await axios.post('/api/v1/accounts/refresh/', { refresh: tokens.refresh });
+            const newTokens = { access: r.data.access, refresh: r.data.refresh || tokens.refresh };
+            writeStoredTokens(newTokens);
+            if (window.API && window.API.setTokens) window.API.setTokens(newTokens);
+            return newTokens;
+          } catch(err) {
+            throw err;
+          } finally {
+            refreshLock = null;
+          }
+        })();
+        try { return await refreshLock; } catch(_) { return null; }
+      }
+
+      async function ensureAuth(){
+        let tokens = readStoredTokens();
+        if (!tokens){
+          const next = encodeURIComponent(location.pathname + location.search);
+          location.replace('/login/?next=' + next);
+          return;
+        }
+        if (window.API && window.API.setTokens) window.API.setTokens(tokens);
+        const updated = await refreshIfNeeded(tokens);
+        if (!updated){
+          clearStoredTokens();
+          const next = encodeURIComponent(location.pathname + location.search);
+          location.replace('/login/?next=' + next);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', ensureAuth);
+      window.addEventListener('pageshow', function(event){ if (event.persisted) { ensureAuth(); } });
+
+      document.addEventListener('DOMContentLoaded', function(){
+        const btn = document.getElementById('logout_btn');
+        if (!btn) return;
+        btn.addEventListener('click', async function(ev){
+          ev.preventDefault();
+          const tokens = readStoredTokens();
+          try {
+            if (tokens && tokens.refresh){
+              await axios.post('/api/v1/accounts/logout/', { refresh: tokens.refresh }, {
+                headers: tokens.access ? { Authorization: 'Bearer ' + tokens.access } : {}
+              });
+            }
+          } catch(_){ }
+          clearStoredTokens();
+          if (window.API && window.API.setTokens) { try { window.API.setTokens(null); } catch(_){} }
+          if (window.caches && caches.keys) { try { (await caches.keys()).forEach(k=>caches.delete(k)); } catch(_){} }
+          location.replace('/login/');
+        });
+      });
+    })();
+  </script>
   {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen flex bg-slate-50">
-  <aside class="hidden md:block w-64 bg-white border-r">
-    <div class="p-4 font-bold text-lg text-slate-800">VIP Ride Portal</div>
-    <nav class="px-2 text-slate-700 space-y-1">
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:home' %}">Dashboard</a>
+<body class="min-h-screen flex bg-ashLight">
+  <aside id="portal-aside" class="hidden md:block w-64 bg-brandBlack text-ash border-r border-black/20 md:static md:translate-x-0 md:shadow-none fixed inset-y-0 left-0 z-40 transform -translate-x-full transition-transform duration-200 ease-out shadow-lg">
+    <div class="p-4 font-bold text-lg text-white">VIP Ride Portal</div>
+    <nav class="px-2 space-y-1">
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:home' %}">Dashboard</a>
       <div class="px-3 pt-2 text-xs uppercase tracking-wide text-slate-400">Client</div>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_profile' %}">Profile</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_book_ride' %}">Book Ride</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_ride_history' %}">Ride History</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_payments' %}">Payments</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_vip_features' %}">VIP</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_premium_features' %}">Premium</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_wallet' %}">Wallet</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_support' %}">Support</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_profile' %}">Profile</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_book_ride' %}">Book Ride</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_ride_history' %}">Ride History</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_payments' %}">Payments</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_vip_features' %}">VIP</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_premium_features' %}">Premium</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_wallet' %}">Wallet</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:client_support' %}">Support</a>
       <div class="px-3 pt-4 text-xs uppercase tracking-wide text-slate-400">Driver</div>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_onboarding' %}">Onboarding</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_documents' %}">Documents</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_earnings' %}">Earnings</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_vehicles' %}">Vehicles</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_subscription' %}">Subscription</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_performance' %}">Performance</a>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_fleet_integration' %}">Fleet</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_onboarding' %}">Onboarding</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_documents' %}">Documents</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_earnings' %}">Earnings</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_vehicles' %}">Vehicles</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_subscription' %}">Subscription</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_performance' %}">Performance</a>
+      <a class="block px-3 py-2 rounded text-ash hover:bg-black/40" href="{% url 'portal:driver_fleet_integration' %}">Fleet</a>
     </nav>
   </aside>
   <main class="flex-1 min-w-0">
-    <header class="bg-white border-b sticky top-0 z-10">
+  <header class="bg-brandBlue/80 text-white sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-brandBlue/60 border-b border-white/10">
       <div class="px-4 py-3 flex items-center justify-between">
-        <button class="md:hidden px-3 py-2 border rounded">Menu</button>
+    <button id="portal-menu-toggle" class="md:hidden px-3 py-2 border border-white/40 rounded inline-flex items-center gap-2" aria-controls="portal-aside" aria-expanded="false" aria-label="Open menu">
+      <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
+      <span>Menu</span>
+    </button>
         <div class="font-semibold">{% block header %}Dashboard{% endblock %}</div>
         <div class="flex items-center gap-3 text-sm">
-          <a href="/" class="text-slate-600 hover:text-slate-900">Marketing</a>
-          <a href="/logout" class="text-slate-600 hover:text-slate-900">Logout</a>
+          <a href="/" class="text-white/90 hover:text-white">Marketing</a>
+          <a id="logout_btn" href="#" class="text-white/90 hover:text-white">Logout</a>
         </div>
       </div>
     </header>
@@ -56,5 +179,50 @@
       {% block content %}{% endblock %}
     </div>
   </main>
+  <script>
+    (function(){
+      var toggle = document.getElementById('portal-menu-toggle');
+      var aside = document.getElementById('portal-aside');
+      var firstFocus = null;
+      if(toggle && aside){
+        toggle.addEventListener('click', function(){
+          // Toggle slide-in menu on mobile
+          if(aside.classList.contains('-translate-x-full')){
+            aside.classList.remove('hidden');
+            requestAnimationFrame(function(){
+              aside.classList.remove('-translate-x-full');
+            });
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('aria-label', 'Close menu');
+            // Focus first link
+            firstFocus = aside.querySelector('a, button, [tabindex]:not([tabindex="-1"])');
+            if (firstFocus) { firstFocus.focus({preventScroll:true}); }
+          } else {
+            aside.classList.add('-translate-x-full');
+            aside.addEventListener('transitionend', function onEnd(){
+              aside.classList.add('hidden');
+              aside.removeEventListener('transitionend', onEnd);
+            });
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Open menu');
+            toggle.focus({preventScroll:true});
+          }
+        });
+        // Close on Escape
+        document.addEventListener('keydown', function(e){
+          if (e.key === 'Escape' && !aside.classList.contains('hidden')){
+            aside.classList.add('-translate-x-full');
+            aside.addEventListener('transitionend', function onEnd(){
+              aside.classList.add('hidden');
+              aside.removeEventListener('transitionend', onEnd);
+            }, { once: true });
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Open menu');
+            toggle.focus({preventScroll:true});
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

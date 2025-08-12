@@ -25,7 +25,9 @@ class UserAdmin(BaseUserAdmin):
         'tier', 'user_type', 'is_active', 'is_email_verified',
         'is_staff', 'is_superuser', 'date_joined'
     ]
-    search_fields = ['email', 'username', 'first_name', 'last_name', 'phone']
+    search_fields = [
+        'email', 'username', 'first_name', 'last_name', 'phone_number'
+    ]
     readonly_fields = ['id', 'date_joined', 'last_login']
     ordering = ['-date_joined']
     
@@ -34,13 +36,18 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'username', 'password')
         }),
         ('Personal Info', {
-            'fields': ('first_name', 'last_name', 'phone', 'date_of_birth')
+            'fields': (
+                'first_name', 'last_name', 'phone_number', 'date_of_birth'
+            )
         }),
         ('User Classification', {
             'fields': ('tier', 'user_type', 'is_email_verified')
         }),
         ('Permissions', {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+            'fields': (
+                'is_active', 'is_staff', 'is_superuser', 'groups',
+                'user_permissions'
+            ),
             'classes': ('collapse',)
         }),
         ('Privacy & Consent', {
@@ -50,10 +57,7 @@ class UserAdmin(BaseUserAdmin):
             ),
             'classes': ('collapse',)
         }),
-        ('Emergency Contact', {
-            'fields': ('emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'),
-            'classes': ('collapse',)
-        }),
+    # Emergency contact is on Driver model, not User
         ('Important Dates', {
             'fields': ('date_joined', 'last_login'),
             'classes': ('collapse',)
@@ -63,14 +67,17 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'password1', 'password2', 'tier', 'user_type'),
+            'fields': (
+                'email', 'username', 'phone_number', 'password1', 'password2',
+                'tier', 'user_type'
+            ),
         }),
     )
     
+    @admin.display(description='Full Name')
     def full_name(self, obj):
         """Display full name"""
         return f"{obj.first_name} {obj.last_name}".strip() or obj.email
-    full_name.short_description = 'Full Name'
 
 
 @admin.register(Driver)
@@ -79,15 +86,16 @@ class DriverAdmin(admin.ModelAdmin):
     
     list_display = [
         'user_info', 'category', 'subscription_tier', 'status',
-        'average_rating', 'total_rides', 'background_check_status', 'license_expiry_date'
+        'average_rating', 'total_rides', 'background_check_status',
+        'license_expiry_date'
     ]
     list_filter = [
         'category', 'subscription_tier', 'status', 'background_check_status',
-        'license_expiry_date', 'background_check_status'
+        'license_expiry_date'
     ]
     search_fields = [
         'user__email', 'user__first_name', 'user__last_name',
-        'license_number', 'vehicle_registration'
+        'license_number'
     ]
     readonly_fields = [
         'id', 'total_rides', 'total_earnings', 'average_rating',
@@ -104,19 +112,14 @@ class DriverAdmin(admin.ModelAdmin):
                 'background_check_status', 'background_check_date'
             )
         }),
-        ('Vehicle Information', {
-            'fields': ('vehicle_registration', 'vehicle_make', 'vehicle_model', 'vehicle_year')
-        }),
         ('Performance Metrics', {
             'fields': ('average_rating', 'total_rides', 'total_earnings'),
             'classes': ('collapse',)
         }),
         ('Bank Information', {
-            'fields': ('bank_name', 'bank_account_number', 'bank_account_name'),
-            'classes': ('collapse',)
-        }),
-        ('Working Preferences', {
-            'fields': ('preferred_zones', 'max_working_hours', 'preferred_vehicle_types'),
+            'fields': (
+                'bank_name', 'bank_account_number', 'bank_account_name'
+            ),
             'classes': ('collapse',)
         }),
         ('Audit', {
@@ -179,7 +182,9 @@ class TrustedDeviceAdmin(admin.ModelAdmin):
         'trust_level', 'is_active', 'created_at', 'last_used_at'
     ]
     search_fields = ['user__email', 'device_name', 'device_fingerprint']
-    readonly_fields = ['id', 'device_fingerprint', 'created_at', 'last_used_at']
+    readonly_fields = [
+        'id', 'device_fingerprint', 'created_at', 'last_used_at'
+    ]
 
 
 @admin.register(MFAToken)
@@ -198,11 +203,10 @@ class MFATokenAdmin(admin.ModelAdmin):
         'id', 'secret_key', 'created_at', 'last_used_at'
     ]
     
+    @admin.display(boolean=True, description='Locked')
     def is_expired(self, obj):
         """Check if token is locked"""
         return obj.locked_until and obj.locked_until > timezone.now()
-    is_expired.boolean = True
-    is_expired.short_description = 'Locked'
 
 
 @admin.register(LoginAttempt)
@@ -222,10 +226,12 @@ class LoginAttemptAdmin(admin.ModelAdmin):
         'created_at', 'success', 'blocked_reason', 'attempt_type'
     ]
     
+    @admin.display(description='User Agent')
     def user_agent_short(self, obj):
         """Display shortened user agent"""
-        return obj.user_agent[:50] + "..." if len(obj.user_agent) > 50 else obj.user_agent
-    user_agent_short.short_description = 'User Agent'
+        if obj.user_agent and len(obj.user_agent) > 50:
+            return obj.user_agent[:50] + "..."
+        return obj.user_agent
     
     def has_add_permission(self, request):
         """Prevent manual creation"""
@@ -253,10 +259,12 @@ class SecurityEventAdmin(admin.ModelAdmin):
         'user_agent', 'created_at', 'description', 'session_id'
     ]
     
+    @admin.display(description='Description')
     def description_short(self, obj):
         """Display shortened description"""
-        return obj.description[:50] + "..." if len(obj.description) > 50 else obj.description
-    description_short.short_description = 'Description'
+        if obj.description and len(obj.description) > 50:
+            return obj.description[:50] + "..."
+        return obj.description
     
     def has_add_permission(self, request):
         """Prevent manual creation"""

@@ -1,0 +1,33 @@
+{% extends 'portal/base.html' %}
+{% block title %}Fleet Integration · Portal{% endblock %}
+{% block header %}Fleet Integration{% endblock %}
+{% block content %}
+<div class="grid lg:grid-cols-3 gap-4">
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-1">Connect Fleet Company</div>
+    <p class="text-sm text-slate-600 mb-3">Link your fleet company account to manage drivers, vehicles, and dispatch rules.</p>
+    <button class="px-3 py-2 bg-sky-600 text-white rounded">Connect</button>
+  </div>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-1">Vehicle Leasing</div>
+    <p class="text-sm text-slate-600 mb-3">Import leased vehicles and assign to drivers with contract rules.</p>
+    <button class="px-3 py-2 bg-slate-800 text-white rounded">Link Leasing</button>
+  </div>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-1">Driver Roster</div>
+    <p class="text-sm text-slate-600 mb-3">Upload or sync your driver roster for onboarding and scheduling.</p>
+    <button class="px-3 py-2 border rounded">Import CSV</button>
+  </div>
+</div>
+
+<div class="mt-4 grid md:grid-cols-2 gap-4">
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Dispatch Rules</div>
+    <p class="text-sm text-slate-600">Prioritize VIP rides, set service areas, surge participation, and SLA targets.</p>
+  </div>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">API Keys</div>
+    <p class="text-sm text-slate-600">Generate keys to integrate your internal tools with real-time ride status.</p>
+  </div>
+</div>
+{% endblock %}

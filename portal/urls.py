@@ -46,4 +46,6 @@ urlpatterns = [
         views.driver_fleet_integration,
         name='driver_fleet_integration'
     ),
+    # Portal logout (session-based)
+    path('logout/', views.logout_view, name='logout'),
 ]

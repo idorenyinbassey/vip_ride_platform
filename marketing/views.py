@@ -4,7 +4,6 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from urllib.parse import urlencode
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
 from .forms import (
     ContactLeadForm,
     PrivateDriverLeadForm,
@@ -50,12 +49,15 @@ def pricing(request):
         return render(request, 'marketing/_pricing_result.html', ctx)
 
     # JSON estimate for API clients
-    if request.headers.get('Accept') == 'application/json' or request.GET.get('format') == 'json':
+    if (
+        request.headers.get('Accept') == 'application/json'
+        or request.GET.get('format') == 'json'
+    ):
         from django.http import JsonResponse
         return JsonResponse(ctx)
 
-    # Full page
-    return render(request, 'marketing/pricing.html', ctx)
+    # Full page requests should use the on-home calculator now
+    return redirect(reverse('marketing:home'))
 
 
 def login_page(request):
@@ -69,7 +71,10 @@ def signup_page(request):
 
 
 def forgot_password(request):
-    """Simple forgot password page to capture email; backend flow can be wired later."""
+    """
+    Simple forgot password page to capture email; backend flow can be wired
+    later.
+    """
     return render(request, 'marketing/forgot_password.html')
 
 
@@ -77,11 +82,29 @@ def forgot_password(request):
 def submit_forgot_password(request):
     email = request.POST.get('email', '').strip()
     if not email:
+        if request.headers.get('HX-Request'):
+            return render(
+                request,
+                'marketing/_error_message.html',
+                {'message': 'Email is required'}
+            )
         messages.error(request, 'Email is required')
         return redirect(reverse('marketing:forgot_password'))
     # In a future iteration, call a password reset API or send email
-    return redirect(f"{reverse('marketing:thank_you')}?"
-                    f"{urlencode({'email': email})}")
+    if request.headers.get('HX-Request'):
+        return render(
+            request,
+            'marketing/_success_message.html',
+            {
+                'message': (
+                    'If that address exists, you will receive a reset link '
+                    'shortly.'
+                )
+            }
+        )
+    return redirect(
+        f"{reverse('marketing:thank_you')}?{urlencode({'email': email})}"
+    )
 
 
 def driver_signup(request):
@@ -109,9 +132,19 @@ def contact(request):
 def submit_contact(request):
     form = ContactLeadForm(request.POST)
     if form.is_valid():
+        # Persist before returning any response
         lead = form.save()
+        # For AJAX (HTMX-like), return a success fragment
+        if request.headers.get('HX-Request'):
+            return render(request, 'marketing/_success_message.html', {
+                'message': "Thank you! We'll be in touch soon.",
+                'lead': lead,
+            })
         url = reverse('marketing:thank_you')
         return redirect(f"{url}?{urlencode({'lead': str(lead.id)})}")
+    # Return partial form for AJAX with errors
+    if request.headers.get('HX-Request'):
+        return render(request, 'marketing/_contact_form.html', {'form': form})
     return render(request, 'marketing/contact.html', {'form': form})
 
 
@@ -120,8 +153,20 @@ def submit_private_driver(request):
     form = PrivateDriverLeadForm(request.POST)
     if form.is_valid():
         lead = form.save()
+        if request.headers.get('HX-Request'):
+            return render(request, 'marketing/_success_message.html', {
+                'message': "Application received. We'll contact you shortly.",
+                'lead': lead,
+            })
         url = reverse('marketing:thank_you')
         return redirect(f"{url}?{urlencode({'lead': str(lead.id)})}")
+    if request.headers.get('HX-Request'):
+        # Render just this form with errors
+        return render(request, 'marketing/driver_signup.html', {
+            'private_form': form,
+            'fleet_form': FleetDriverLeadForm(),
+            'owner_form': VehicleOwnerLeadForm(),
+        })
     return render(request, 'marketing/driver_signup.html', {
         'private_form': form,
         'fleet_form': FleetDriverLeadForm(),
@@ -134,8 +179,19 @@ def submit_fleet_driver(request):
     form = FleetDriverLeadForm(request.POST)
     if form.is_valid():
         lead = form.save()
+        if request.headers.get('HX-Request'):
+            return render(request, 'marketing/_success_message.html', {
+                'message': "Fleet inquiry received. We'll reach out soon.",
+                'lead': lead,
+            })
         url = reverse('marketing:thank_you')
         return redirect(f"{url}?{urlencode({'lead': str(lead.id)})}")
+    if request.headers.get('HX-Request'):
+        return render(request, 'marketing/driver_signup.html', {
+            'private_form': PrivateDriverLeadForm(),
+            'fleet_form': form,
+            'owner_form': VehicleOwnerLeadForm(),
+        })
     return render(request, 'marketing/driver_signup.html', {
         'private_form': PrivateDriverLeadForm(),
         'fleet_form': form,
@@ -148,8 +204,25 @@ def submit_vehicle_owner(request):
     form = VehicleOwnerLeadForm(request.POST)
     if form.is_valid():
         lead = form.save()
+        if request.headers.get('HX-Request'):
+            return render(
+                request,
+                'marketing/_success_message.html',
+                {
+                    'message': (
+                        "Vehicle owner request received. We'll contact you."
+                    ),
+                    'lead': lead,
+                }
+            )
         url = reverse('marketing:thank_you')
         return redirect(f"{url}?{urlencode({'lead': str(lead.id)})}")
+    if request.headers.get('HX-Request'):
+        return render(request, 'marketing/driver_signup.html', {
+            'private_form': PrivateDriverLeadForm(),
+            'fleet_form': FleetDriverLeadForm(),
+            'owner_form': form,
+        })
     return render(request, 'marketing/driver_signup.html', {
         'private_form': PrivateDriverLeadForm(),
         'fleet_form': FleetDriverLeadForm(),
@@ -162,8 +235,15 @@ def submit_hotel_partner(request):
     form = HotelPartnerForm(request.POST)
     if form.is_valid():
         partner = form.save()
+        if request.headers.get('HX-Request'):
+            return render(request, 'marketing/_success_message.html', {
+                'message': "Thanks! Our partnerships team will reach out.",
+                'partner': partner,
+            })
         url = reverse('marketing:thank_you')
         return redirect(f"{url}?{urlencode({'hotel': str(partner.id)})}")
+    if request.headers.get('HX-Request'):
+        return render(request, 'marketing/hotels.html', {'form': form})
     return render(request, 'marketing/hotels.html', {'form': form})
 
 

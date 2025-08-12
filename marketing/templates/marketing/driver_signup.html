@@ -5,21 +5,50 @@
 <div class="max-w-7xl mx-auto px-4 py-12">
   <h1 class="text-3xl font-bold mb-6">{% trans "Become a Driver" %}</h1>
   <div class="grid md:grid-cols-3 gap-8">
-  <form method="post" action="{% url 'marketing:submit_private_driver' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+    <div id="private-form" class="border border-ash rounded p-6 bg-white shadow-sm space-y-4">
       <h2 class="font-semibold">{% trans "Private Driver" %}</h2>
-      {{ private_form.as_p }}
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
-    </form>
-  <form method="post" action="{% url 'marketing:submit_fleet_driver' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      <form method="post" action="{% url 'marketing:submit_private_driver' %}" onsubmit="return false;" class="form-styled space-y-4">{% csrf_token %}
+        {{ private_form.as_p }}
+        <button type="button" class="px-4 py-2 rounded bg-brandBlue text-white hover:bg-brandBlueLight" onclick="postForm(this.closest('form')).then(r=>{document.getElementById('private-form').innerHTML=r.html;});">{% trans "Submit" %}</button>
+      </form>
+    </div>
+    <div id="fleet-form" class="border border-ash rounded p-6 bg-white shadow-sm space-y-4">
       <h2 class="font-semibold">{% trans "Fleet Company" %}</h2>
-      {{ fleet_form.as_p }}
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
-    </form>
-  <form method="post" action="{% url 'marketing:submit_vehicle_owner' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      <form method="post" action="{% url 'marketing:submit_fleet_driver' %}" onsubmit="return false;" class="form-styled space-y-4">{% csrf_token %}
+        {{ fleet_form.as_p }}
+        <button type="button" class="px-4 py-2 rounded bg-brandBlue text-white hover:bg-brandBlueLight" onclick="postForm(this.closest('form')).then(r=>{document.getElementById('fleet-form').innerHTML=r.html;});">{% trans "Submit" %}</button>
+      </form>
+    </div>
+    <div id="owner-form" class="border border-ash rounded p-6 bg-white shadow-sm space-y-4">
       <h2 class="font-semibold">{% trans "Vehicle Owner" %}</h2>
-      {{ owner_form.as_p }}
-      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
-    </form>
+      <form method="post" action="{% url 'marketing:submit_vehicle_owner' %}" onsubmit="return false;" class="form-styled space-y-4">{% csrf_token %}
+        {{ owner_form.as_p }}
+        <button type="button" class="px-4 py-2 rounded bg-brandBlue text-white hover:bg-brandBlueLight" onclick="postForm(this.closest('form')).then(r=>{document.getElementById('owner-form').innerHTML=r.html;});">{% trans "Submit" %}</button>
+      </form>
+    </div>
   </div>
+  <script>
+    (function(){
+      function styleForm(container){
+        var el = container && container.querySelector('form');
+        if(!el) return;
+        var inputs = el.querySelectorAll('input, select, textarea');
+        inputs.forEach(function(i){
+          i.classList.add(
+            'block','w-full','rounded','border','border-ash','bg-white',
+            'px-3','py-2','focus:outline-none','focus:ring-2',
+            'focus:ring-turquoise','focus:border-brandBlue'
+          );
+        });
+        var labels = el.querySelectorAll('label');
+        labels.forEach(function(l){ l.classList.add('block','text-sm','font-medium','text-gray-700','mb-1'); });
+        var ps = el.querySelectorAll('p');
+        ps.forEach(function(p){ p.classList.add('space-y-1'); });
+      }
+      styleForm(document.getElementById('private-form'));
+      styleForm(document.getElementById('fleet-form'));
+      styleForm(document.getElementById('owner-form'));
+    })();
+  </script>
 </div>
 {% endblock %}

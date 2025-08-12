@@ -19,11 +19,7 @@
     <div class="space-y-3">
       <label class="block">
         <span class="text-sm">{% trans "Tier" %}</span>
-  <select id="tier" name="tier" class="w-full border rounded p-2"
-          hx-get="{% url 'marketing:pricing' %}"
-          hx-target="#pricing-result"
-          hx-vals='js:{tier: tier.value, distance: distance.value}'
-          hx-trigger="change">
+        <select id="tier" name="tier" class="w-full border rounded p-2">
           <option value="normal">{% trans "Normal" %}</option>
           <option value="premium">{% trans "Premium" %}</option>
           <option value="vip">{% trans "VIP" %}</option>
@@ -31,26 +27,45 @@
       </label>
       <label class="block">
         <span class="text-sm">{% trans "Distance (km)" %}</span>
-  <input id="distance" name="distance" type="number" value="10" min="1" class="w-full border rounded p-2"
-         hx-get="{% url 'marketing:pricing' %}"
-         hx-target="#pricing-result"
-         hx-vals='js:{tier: tier.value, distance: distance.value}'
-         hx-trigger="keyup changed delay:300ms" />
+        <input id="distance" name="distance" type="number" value="10" min="1" class="w-full border rounded p-2" />
       </label>
-      <label class="block">
-        <button type="button"
-                class="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                hx-get="{% url 'marketing:pricing' %}"
-                hx-target="#pricing-result"
-                hx-vals='js:{tier: tier.value, distance: distance.value}'>
-          {% trans "Calculate" %}
-        </button>
+            let debounceId;
+            async function update(){
+              try {
+                const r = await getFragment('{% url 'marketing:pricing' %}', { tier: tier.value, distance: distance.value });
+                if (r.ok){
+                  target.innerHTML = '<h2 class="font-semibold mb-2'>{% trans "Estimate" %}</h2>' + r.html;
+                } else {
+                  target.innerHTML = '<div class="p-3 rounded bg-red-50 text-red-700">{% trans "Could not fetch estimate. Please try again." %}</div>';
+                }
+              } catch(e){
+                target.innerHTML = '<div class="p-3 rounded bg-red-50 text-red-700">{% trans "Network error while calculating. Check your connection and retry." %}</div>';
+              }
+            }
       </label>
-    </div>
+            distance.addEventListener('input', function(){
+              if (debounceId) clearTimeout(debounceId);
+              debounceId = setTimeout(update, 300);
+            });
     <div id="pricing-result" class="border rounded p-6">
       <h2 class="font-semibold mb-2">{% trans "Estimate" %}</h2>
   {% include 'marketing/_pricing_result.html' %}
     </div>
   </div>
+  <script>
+    (function(){
+      const tier = document.getElementById('tier');
+      const distance = document.getElementById('distance');
+      const btn = document.getElementById('calcBtn');
+      const target = document.getElementById('pricing-result');
+      async function update(){
+        const r = await getFragment('{% url 'marketing:pricing' %}', { tier: tier.value, distance: distance.value });
+        if (r.ok){ target.innerHTML = '<h2 class="font-semibold mb-2">{% trans "Estimate" %}</h2>' + r.html; }
+      }
+      btn.addEventListener('click', update);
+      distance.addEventListener('input', function(){ clearTimeout(window.__p); window.__p = setTimeout(update, 300); });
+      tier.addEventListener('change', update);
+    })();
+  </script>
 </div>
 {% endblock %}

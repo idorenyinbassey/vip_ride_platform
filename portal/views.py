@@ -1,5 +1,7 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib.auth import logout
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_http_methods
 
 
 def dashboard_home(request):
@@ -7,77 +9,76 @@ def dashboard_home(request):
 
 
 # Client dashboard
-@login_required
 def client_profile(request):
     return render(request, 'portal/client/profile.html')
 
 
-@login_required
 def client_book_ride(request):
     return render(request, 'portal/client/book.html')
 
 
-@login_required
 def client_ride_history(request):
     return render(request, 'portal/client/rides.html')
 
 
-@login_required
 def client_payments(request):
     return render(request, 'portal/client/payments.html')
 
 
-@login_required
 def client_vip_features(request):
     return render(request, 'portal/client/vip.html')
 
 
-@login_required
 def client_premium_features(request):
     return render(request, 'portal/client/premium.html')
 
 
-@login_required
 def client_wallet(request):
     return render(request, 'portal/client/wallet.html')
 
 
-@login_required
 def client_support(request):
     return render(request, 'portal/client/support.html')
 
 
 # Driver dashboard
-@login_required
 def driver_onboarding(request):
     return render(request, 'portal/driver/onboarding.html')
 
 
-@login_required
 def driver_documents(request):
     return render(request, 'portal/driver/documents.html')
 
 
-@login_required
 def driver_earnings(request):
     return render(request, 'portal/driver/earnings.html')
 
 
-@login_required
 def driver_vehicles(request):
     return render(request, 'portal/driver/vehicles.html')
 
 
-@login_required
 def driver_subscription(request):
     return render(request, 'portal/driver/subscription.html')
 
 
-@login_required
 def driver_performance(request):
     return render(request, 'portal/driver/performance.html')
 
 
-@login_required
 def driver_fleet_integration(request):
     return render(request, 'portal/driver/fleet.html')
+
+
+@never_cache
+@require_http_methods(["GET"])
+def logout_view(request):
+    """
+    Server-side session logout; client JS also clears JWTs
+    and then we redirect.
+    """
+    try:
+        logout(request)
+    finally:
+        next_url = request.GET.get('next') or '/login/'
+        return redirect(next_url)

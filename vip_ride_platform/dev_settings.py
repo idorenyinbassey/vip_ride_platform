@@ -44,6 +44,11 @@ SECRET_KEY = 'dev-key-not-for-production-use-only-for-local-development-123456'
 # Development-specific settings
 INTERNAL_IPS = ['127.0.0.1', 'localhost']
 
+# Auth redirects for development: use marketing login and portal home
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/portal/'
+LOGOUT_REDIRECT_URL = '/login/'
+
 # Development payment gateways (all in test mode)
 PAYSTACK_TEST_MODE = True
 FLUTTERWAVE_TEST_MODE = True

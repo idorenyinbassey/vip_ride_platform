@@ -76,7 +76,7 @@
   }
   computeFingerprintAsync().then(v=>{ fpInput.value = v; }).catch(()=>{ fpInput.value = simpleHash('x'); });
 
-  async function login(payload){
+  async function jwtLogin(payload){
     const res = await fetch('/api/v1/accounts/login/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -103,17 +103,37 @@
     if (mfa) payload.mfa_token = String(mfa);
 
     try {
-      const data = await login(payload);
+      const rawNext = new URLSearchParams(location.search).get('next') || '';
+      let nextTarget = '';
+      try { nextTarget = decodeURIComponent(rawNext); } catch(_) { nextTarget = rawNext; }
+      // Only allow single-slash absolute paths (same-origin) e.g. '/portal/...'
+      const isSafe = typeof nextTarget === 'string' && /^\/(?!\/)/.test(nextTarget);
+      if (!isSafe) nextTarget = '';
+
+  // Portal now uses JWT in browser, no server session required
+
+  const data = await jwtLogin(payload);
       // Persist tokens (session by default; local if remember checked)
       const tokens = { access: data.access, refresh: data.refresh };
-      const storage = rememberEl.checked ? localStorage : sessionStorage;
+      const remember = !!rememberEl.checked;
+      const storage = remember ? localStorage : sessionStorage;
+      // Mark persistence mode for portal script determinism
+      try {
+        if (remember) {
+          localStorage.setItem('tokens_persist', 'local');
+          sessionStorage.removeItem('tokens');
+        } else {
+          localStorage.removeItem('tokens');
+          localStorage.setItem('tokens_persist', 'session');
+        }
+      } catch(_){}
       storage.setItem('tokens', JSON.stringify(tokens));
       storage.setItem('user', JSON.stringify(data.user || {}));
 
-      statusEl.textContent = '{% trans "Login successful. Redirecting…" %}';
+  statusEl.textContent = '{% trans "Login successful. Redirecting…" %}';
       statusEl.className = 'text-sm text-emerald-600';
-      // Prefer portal if present
-      const target = new URLSearchParams(location.search).get('next') || '/portal/';
+  // Prefer portal if present
+  const target = nextTarget || '/portal/';
       setTimeout(() => { window.location.href = target; }, 400);
     } catch (e){
       const d = e.data || {};
