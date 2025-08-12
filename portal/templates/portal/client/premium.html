@@ -1,0 +1,14 @@
+{% extends 'portal/base.html' %}
+{% block header %}Premium Features{% endblock %}
+{% block content %}
+<div class="grid gap-4 md:grid-cols-2">
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Hotel Booking</div>
+    <button class="border rounded px-4 py-2 hover:bg-slate-50">Find Hotels</button>
+  </div>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Membership Card</div>
+    <div class="h-24 bg-[var(--brand)] text-white rounded flex items-center justify-center">Premium Member</div>
+  </div>
+</div>
+{% endblock %}

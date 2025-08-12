@@ -1,0 +1,22 @@
+{% extends 'portal/base.html' %}
+{% block header %}Driver Onboarding{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Category Selection</div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="border rounded px-3 py-2">Private Driver</button>
+      <button class="border rounded px-3 py-2">Fleet Employee</button>
+      <button class="border rounded px-3 py-2">Vehicle Owner</button>
+    </div>
+  </div>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Requirements</div>
+    <ul class="list-disc pl-5 text-slate-700">
+      <li>Driver's license</li>
+      <li>Identity document</li>
+      <li>Background check</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Sign up" %}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-12">
+  <h1 class="text-2xl font-bold mb-6">{% trans "Create your account" %}</h1>
+  <form id="signup-form" class="space-y-4" method="post" action="/api/v1/accounts/register/">
+    {% csrf_token %}
+    <label class="block">
+      <span class="text-sm">{% trans "Email" %}</span>
+      <input name="email" type="email" required class="w-full border rounded p-2" />
+    </label>
+    <label class="block">
+      <span class="text-sm">{% trans "Phone Number" %}</span>
+      <input name="phone_number" type="tel" required class="w-full border rounded p-2" />
+    </label>
+    <label class="block">
+      <span class="text-sm">{% trans "Password" %}</span>
+      <input name="password" type="password" required class="w-full border rounded p-2" />
+    </label>
+    <label class="block">
+      <span class="text-sm">{% trans "Confirm Password" %}</span>
+      <input name="password_confirm" type="password" required class="w-full border rounded p-2" />
+    </label>
+    <label class="block">
+      <span class="text-sm">{% trans "Tier" %}</span>
+      <select name="tier" class="w-full border rounded p-2">
+        <option value="normal">{% trans "Normal" %}</option>
+        <option value="premium">{% trans "Premium" %}</option>
+        <option value="vip">{% trans "VIP" %}</option>
+      </select>
+    </label>
+    <button type="submit" class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700">{% trans "Sign up" %}</button>
+  </form>
+</div>
+{% endblock %}

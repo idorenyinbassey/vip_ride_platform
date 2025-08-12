@@ -1,0 +1,133 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Login" %}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-12">
+  <h1 class="text-2xl font-bold mb-6">{% trans "Login" %}</h1>
+  <form id="login-form" class="space-y-4" autocomplete="on">
+    {% csrf_token %}
+    <label class="block">
+      <span class="text-sm">{% trans "Email" %}</span>
+      <input name="email" type="email" required class="w-full border rounded p-2" />
+    </label>
+    <label class="block">
+      <span class="text-sm">{% trans "Password" %}</span>
+      <input name="password" type="password" required class="w-full border rounded p-2" />
+    </label>
+
+    <div class="flex items-center gap-2">
+      <input id="remember_device" name="remember_device" type="checkbox" class="h-4 w-4" />
+      <label for="remember_device" class="text-sm">{% trans "Remember this device" %}</label>
+    </div>
+
+    <div id="mfa_group" class="hidden">
+      <label class="block">
+        <span class="text-sm">{% trans "MFA token" %}</span>
+        <input name="mfa_token" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="w-full border rounded p-2" placeholder="123456" />
+      </label>
+      <p class="text-xs text-gray-600 mt-1">{% trans "Enter the 6-digit code from your authenticator/SMS/email." %}</p>
+    </div>
+
+    <input type="hidden" name="device_fingerprint" id="device_fingerprint" />
+
+    <div class="flex items-center justify-between">
+      <a href="{% url 'marketing:forgot_password' %}" class="text-sm text-blue-600 hover:underline">{% trans "Forgot password?" %}</a>
+      <a href="{% url 'marketing:signup' %}" class="text-sm text-blue-600 hover:underline">{% trans "Create account" %}</a>
+    </div>
+
+    <button id="login_btn" type="submit" class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700">{% trans "Login" %}</button>
+    <div id="login_status" class="text-sm mt-2"></div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('login-form');
+  const statusEl = document.getElementById('login_status');
+  const mfaGroup = document.getElementById('mfa_group');
+  const fpInput = document.getElementById('device_fingerprint');
+  const rememberEl = document.getElementById('remember_device');
+
+  // Simple deterministic fingerprint (non-PII, best-effort)
+  function simpleHash(str){
+    let h = 5381; for (let i=0;i<str.length;i++){ h = ((h<<5)+h) ^ str.charCodeAt(i); }
+    return (h >>> 0).toString(16).padStart(8,'0');
+  }
+  function toHex(buf){
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  async function computeFingerprintAsync(){
+    try {
+      const data = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width+'x'+screen.height+'x'+(screen.colorDepth||0),
+        Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        navigator.platform || ''
+      ].join('|');
+      if (window.crypto && window.crypto.subtle){
+        const enc = new TextEncoder().encode(data);
+        const digest = await window.crypto.subtle.digest('SHA-256', enc);
+        return toHex(digest);
+      }
+      // Fallback (shorter)
+      return simpleHash(data);
+    } catch(e){ return simpleHash(String(Math.random())); }
+  }
+  computeFingerprintAsync().then(v=>{ fpInput.value = v; }).catch(()=>{ fpInput.value = simpleHash('x'); });
+
+  async function login(payload){
+    const res = await fetch('/api/v1/accounts/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const err = new Error('HTTP '+res.status); err.data = data; throw err; }
+    return data;
+  }
+
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    statusEl.textContent = '{% trans "Signing in…" %}';
+    statusEl.className = 'text-sm text-gray-600';
+
+    const fd = new FormData(form);
+    const payload = {
+      email: fd.get('email'),
+      password: fd.get('password'),
+      device_fingerprint: fd.get('device_fingerprint') || fpInput.value,
+      remember_device: !!rememberEl.checked,
+    };
+    const mfa = fd.get('mfa_token');
+    if (mfa) payload.mfa_token = String(mfa);
+
+    try {
+      const data = await login(payload);
+      // Persist tokens (session by default; local if remember checked)
+      const tokens = { access: data.access, refresh: data.refresh };
+      const storage = rememberEl.checked ? localStorage : sessionStorage;
+      storage.setItem('tokens', JSON.stringify(tokens));
+      storage.setItem('user', JSON.stringify(data.user || {}));
+
+      statusEl.textContent = '{% trans "Login successful. Redirecting…" %}';
+      statusEl.className = 'text-sm text-emerald-600';
+      // Prefer portal if present
+      const target = new URLSearchParams(location.search).get('next') || '/portal/';
+      setTimeout(() => { window.location.href = target; }, 400);
+    } catch (e){
+      const d = e.data || {};
+      if (d.mfa_required){
+        mfaGroup.classList.remove('hidden');
+        statusEl.textContent = d.message || '{% trans "Multi-factor authentication required. Enter your code." %}';
+        statusEl.className = 'text-sm text-amber-600';
+      } else {
+        const msg = (d && (d.error || d.detail)) || '{% trans "Login failed. Check your credentials and try again." %}';
+        statusEl.textContent = msg;
+        statusEl.className = 'text-sm text-red-600';
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

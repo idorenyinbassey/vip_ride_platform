@@ -1,0 +1,12 @@
+{% load i18n %}
+<div>
+  <p class="text-gray-800"><strong>{% trans "Tier" %}:</strong> {{ tier|title }}</p>
+  <p class="text-gray-800"><strong>{% trans "Distance" %}:</strong> {{ distance }} km</p>
+  <p class="text-gray-900 text-lg font-semibold">
+    <strong>{% trans "Fare Estimate" %}:</strong>
+    {{ estimate }}
+  </p>
+  <p class="text-gray-600 text-sm">
+    {% trans "Commission range" %}: {{ commission_min }} - {{ commission_max }}
+  </p>
+</div>

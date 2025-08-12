@@ -53,8 +53,14 @@ cd vip_ride_platform
 python -m venv venv_new
 source venv_new/Scripts/activate  # Windows
 pip install -r requirements.txt
+# Optional: use provided env file for local dev
+cp .env.example .env
+# Load .env in Git Bash (optional; PowerShell users can set $env:VAR)
+set -a; . ./.env; set +a
 python manage.py migrate
-python manage.py runserver 127.0.0.1:8001 --settings=vip_ride_platform.dev_settings
+python manage.py runserver 127.0.0.1:8001
+# Alternatively, pass settings explicitly if you prefer:
+# python manage.py runserver 127.0.0.1:8001 --settings=vip_ride_platform.dev_settings
 
 # Access URLs:
 # API: http://127.0.0.1:8001/api/v1/
@@ -404,9 +410,46 @@ python manage.py loaddata fixtures/sample_data.json
 # Start with development settings (HTTP-friendly)
 python manage.py runserver 127.0.0.1:8001 --settings=vip_ride_platform.dev_settings
 
+# If DJANGO_SETTINGS_MODULE=vip_ride_platform.dev_settings is set in .env,
+# you can run without the --settings flag:
+# python manage.py runserver 127.0.0.1:8001
+
 # Or with production settings
 python manage.py runserver 127.0.0.1:8001
 ```
+
+#### 6. Redis & Celery (Local Development)
+
+```bash
+# Copy env (contains REDIS_URL and Celery settings)
+cp .env.example .env
+
+# Load .env in Git Bash (PowerShell users can set $env:VAR instead)
+set -a; . ./.env; set +a
+
+# Ensure Redis is running on 127.0.0.1:6379
+# Optional (Docker):
+# docker run --rm -p 6379:6379 redis:7-alpine
+
+# Start Celery worker (new terminal, activate venv and load .env first)
+celery -A vip_ride_platform worker -l info
+
+# Optional: start Celery beat for scheduled tasks
+celery -A vip_ride_platform beat -l info
+```
+
+Notes
+- If `cp` isn’t available in your shell, use Python fallback:
+  ```bash
+  python - <<'PY'
+  import shutil, os
+  src='.env.example'; dst='.env'
+  if not os.path.exists(dst):
+      shutil.copy(src, dst)
+  print('env copied')
+  PY
+  ```
+- The `.env` sets `DJANGO_SETTINGS_MODULE=vip_ride_platform.dev_settings`, `REDIS_URL`, and `CELERY_*` so Celery and cache use your local Redis.
 
 ### 🎯 Development Access URLs
 
@@ -548,7 +591,7 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with production values
+# Edit .env with production values (see Production .env below)
 ```
 
 ##### 4. Database Setup
@@ -565,6 +608,43 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 python manage.py createsuperuser
 ```
+
+### 🔐 Production .env (bare metal/VM)
+
+Create/update `.env` with production-safe values:
+
+```
+DJANGO_SETTINGS_MODULE=vip_ride_platform.prod_settings
+DEBUG=false
+SECRET_KEY=your-strong-production-secret
+
+# Database (choose one)
+USE_POSTGRES=true
+DB_NAME=vip_ride_platform
+DB_USER=vip_user
+DB_PASSWORD=change-me
+DB_HOST=localhost
+DB_PORT=5432
+# Or single DSN:
+# DATABASE_URL=postgresql://vip_user:change-me@localhost:5432/vip_ride_platform
+
+# Redis for cache/channels/Celery
+REDIS_URL=redis://localhost:6379/0
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
+
+# Security
+SECURE_SSL_REDIRECT=true
+SESSION_COOKIE_SECURE=true
+CSRF_COOKIE_SECURE=true
+SECURE_HSTS_SECONDS=31536000
+STRICT_PRODUCTION_MODE=true
+```
+
+Then:
+- Ensure a `logs/` directory exists for file logging.
+- Run migrations and collect static on the server.
+- Start your WSGI server (gunicorn) behind Nginx.
 
 ##### 5. Nginx Configuration
 ```nginx
@@ -606,6 +686,52 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
+```
+
+#### ⏱️ Celery (systemd examples)
+
+Create two services (worker and beat), loading the same env file.
+
+```ini
+# /etc/systemd/system/vipride-celery.service
+[Unit]
+Description=VIP Ride Celery Worker
+After=network.target
+
+[Service]
+User=vipride
+Group=www-data
+WorkingDirectory=/home/vipride/vip_ride_platform
+EnvironmentFile=/home/vipride/vip_ride_platform/.env
+ExecStart=/home/vipride/vip_ride_platform/venv/bin/celery -A vip_ride_platform worker -l info
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/vipride-celery-beat.service
+[Unit]
+Description=VIP Ride Celery Beat
+After=network.target
+
+[Service]
+User=vipride
+Group=www-data
+WorkingDirectory=/home/vipride/vip_ride_platform
+EnvironmentFile=/home/vipride/vip_ride_platform/.env
+ExecStart=/home/vipride/vip_ride_platform/venv/bin/celery -A vip_ride_platform beat -l info
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now vipride-celery vipride-celery-beat
 ```
 
 #### 🚀 AWS Deployment
@@ -695,6 +821,26 @@ git push heroku main
 # Run migrations
 heroku run python manage.py migrate
 heroku run python manage.py createsuperuser
+```
+
+### 🐳 Docker Compose (Production) — .env tips
+
+When using `docker-compose.prod.yml`, create a `.env` file in the project root with at least:
+
+```
+SECRET_KEY=your-strong-production-secret
+DB_PASSWORD=postgres-password-for-db-service
+```
+
+Then build and start:
+```
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+Run migrations and create admin:
+```
+docker-compose -f docker-compose.prod.yml exec web python manage.py migrate
+docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
 ```
 
 ### 🔒 Production Security Checklist

@@ -1,0 +1,13 @@
+{% extends 'portal/base.html' %}
+{% block header %}Subscription{% endblock %}
+{% block content %}
+<div class="bg-white border rounded p-4">
+  <div class="font-semibold mb-2">Driver Subscription</div>
+  <div class="grid md:grid-cols-3 gap-3">
+    <button class="border rounded px-4 py-2">₦18,000 / month</button>
+    <button class="border rounded px-4 py-2">₦50,000 / month</button>
+    <button class="border rounded px-4 py-2">₦100,000 / month</button>
+  </div>
+  <div class="mt-4 text-sm text-slate-600">Payment history will appear here.</div>
+</div>
+{% endblock %}

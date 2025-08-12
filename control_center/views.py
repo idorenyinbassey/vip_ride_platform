@@ -20,6 +20,8 @@ from .models import (
     IncidentResponse, SOSConfiguration,
     IncidentStatus, IncidentPriority
 )
+from rides.models import Ride
+from fleet_management.models import Vehicle
 from .serializers import (
     EmergencyIncidentSerializer, EmergencyIncidentCreateSerializer,
     VIPMonitoringSessionSerializer, ControlOperatorSerializer,
@@ -353,14 +355,22 @@ def trigger_sos(request):
     
     if serializer.is_valid():
         data = serializer.validated_data
+        ride_obj = None
+        vehicle_obj = None
+        ride_id = data.get('ride_id')
+        vehicle_id = data.get('vehicle_id')
+        if ride_id:
+            ride_obj = Ride.objects.filter(id=ride_id).first()
+        if vehicle_id:
+            vehicle_obj = Vehicle.objects.filter(id=vehicle_id).first()
         
         # Create emergency incident
         incident = EmergencyIncident.objects.create(
             incident_type=data['incident_type'],
             priority=IncidentPriority.CRITICAL,
             user=request.user,
-            ride_id=data.get('ride_id'),
-            vehicle_id=data.get('vehicle_id'),
+            ride=ride_obj,
+            vehicle=vehicle_obj,
             incident_latitude=data['latitude'],
             incident_longitude=data['longitude'],
             description=data['description'],

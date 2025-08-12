@@ -1,0 +1,146 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <h1 class="text-2xl font-semibold">Book a Ride</h1>
+
+  <form id="booking-form" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium">Pickup</label>
+      <input type="text" name="pickup" class="mt-1 w-full border rounded p-2" placeholder="e.g., 24 Marina, Lagos" required />
+    </div>
+    <div>
+      <label class="block text-sm font-medium">Dropoff</label>
+      <input type="text" name="dropoff" class="mt-1 w-full border rounded p-2" placeholder="e.g., Eko Hotel, VI" required />
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium">Tier</label>
+        <select id="tier" name="tier" class="mt-1 w-full border rounded p-2">
+          <option value="normal">Normal</option>
+          <option value="premium">Premium</option>
+          <option value="vip">VIP</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Estimated Distance (km)</label>
+        <input id="distance" type="number" min="1" step="0.1" value="5" class="mt-1 w-full border rounded p-2" />
+      </div>
+      <div class="flex items-end">
+        <button id="estimate-btn" type="button" class="w-full bg-indigo-600 text-white px-4 py-2 rounded">Estimate</button>
+      </div>
+    </div>
+
+    <div id="estimate" class="text-sm text-gray-700"></div>
+
+    <div class="pt-2">
+      <button type="submit" class="bg-emerald-600 text-white px-4 py-2 rounded">Request Ride</button>
+    </div>
+  </form>
+
+  <div id="status" class="text-sm text-gray-600"></div>
+  <div id="tracking" class="border rounded p-3 hidden">
+    <h2 class="font-medium mb-2">Live Tracking</h2>
+    <div id="tracking-log" class="h-40 overflow-auto text-xs bg-gray-50 p-2 rounded"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="{% static 'portal/js/api.js' %}"></script>
+<script>
+(function(){
+  const form = document.getElementById('booking-form');
+  const statusEl = document.getElementById('status');
+  const estimateEl = document.getElementById('estimate');
+  const trackingBox = document.getElementById('tracking');
+  const trackingLog = document.getElementById('tracking-log');
+  const tierEl = document.getElementById('tier');
+  const distanceEl = document.getElementById('distance');
+  const estimateBtn = document.getElementById('estimate-btn');
+
+  // If user came from marketing login, tokens may be in sessionStorage
+  try {
+    const t = sessionStorage.getItem('tokens') || localStorage.getItem('tokens');
+    if (t){ API.setTokens(JSON.parse(t)); }
+  } catch(e){}
+
+  async function updateEstimate(){
+    estimateEl.textContent = 'Fetching estimate...';
+    try {
+      const data = await API.getPricingEstimate(tierEl.value, Number(distanceEl.value || 5));
+      if (data && data.estimate){
+        estimateEl.textContent = `Estimated Fare: ₦${data.estimate.toLocaleString()} (${tierEl.value.toUpperCase()})`;
+      } else {
+        estimateEl.textContent = 'Unable to compute estimate.';
+      }
+    } catch(e){
+      estimateEl.textContent = 'Estimate error. Please try again.';
+    }
+  }
+
+  estimateBtn.addEventListener('click', updateEstimate);
+
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    statusEl.textContent = 'Submitting ride request...';
+
+    const formData = new FormData(form);
+    const payload = {
+      pickup: formData.get('pickup'),
+      dropoff: formData.get('dropoff'),
+      tier: formData.get('tier') || 'normal',
+      distance_km: Number(document.getElementById('distance').value || 5),
+    };
+
+    try {
+      const res = await API.api.post('/rides/book/', payload);
+      statusEl.textContent = 'Ride requested. Waiting for driver assignment...';
+
+      const booking = res.data; // expect { ride_id, channel, ws_url? }
+      startTracking(booking);
+    } catch(e){
+      statusEl.textContent = 'Booking failed. Please check details and try again.';
+    }
+  });
+
+  function log(line){
+    const el = document.createElement('div');
+    el.textContent = new Date().toLocaleTimeString() + ' — ' + line;
+    trackingLog.appendChild(el);
+    trackingLog.scrollTop = trackingLog.scrollHeight;
+  }
+
+  function startTracking(booking){
+    trackingBox.classList.remove('hidden');
+    log('Subscribed to tracking channel.');
+
+    let wsUrl = booking.ws_url;
+    if (!wsUrl){
+      const protocol = (location.protocol === 'https:') ? 'wss' : 'ws';
+      wsUrl = protocol + '://' + location.host + '/ws/gps/ride/' + booking.ride_id + '/';
+    }
+
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = function(){ log('WebSocket connected'); };
+    ws.onclose = function(){ log('WebSocket closed'); };
+    ws.onerror = function(){ log('WebSocket error'); };
+    ws.onmessage = function(evt){
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'location_update'){
+          log('Lat ' + msg.lat + ', Lng ' + msg.lng + (msg.speed ? (', ' + msg.speed + 'km/h') : ''));
+        } else if (msg.type){
+          log('Event: ' + msg.type);
+        } else {
+          log(evt.data);
+        }
+      } catch(e){ log('Message: ' + evt.data); }
+    };
+  }
+
+  // Initial quick estimate
+  updateEstimate();
+})();
+</script>
+{% endblock %}

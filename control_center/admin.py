@@ -52,7 +52,7 @@ class VIPMonitoringSessionAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Session Information', {
-            'fields': ('user', 'ride_id', 'driver', 'vehicle_id')
+            'fields': ('user', 'ride', 'driver', 'vehicle')
         }),
         ('Monitoring', {
             'fields': ('monitoring_level', 'assigned_operator', 'is_active')

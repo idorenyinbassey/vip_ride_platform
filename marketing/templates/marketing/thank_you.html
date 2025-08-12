@@ -1,0 +1,10 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Thank You" %}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-24 text-center">
+  <h1 class="text-3xl font-bold mb-4">{% trans "Thank you!" %}</h1>
+  <p class="text-gray-700">{% trans "We've received your request and will contact you soon." %}</p>
+  <a href="/" class="inline-block mt-6 px-4 py-2 border rounded">{% trans "Back to Home" %}</a>
+</div>
+{% endblock %}

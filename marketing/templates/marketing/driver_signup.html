@@ -1,0 +1,25 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Driver Signup" %}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-bold mb-6">{% trans "Become a Driver" %}</h1>
+  <div class="grid md:grid-cols-3 gap-8">
+  <form method="post" action="{% url 'marketing:submit_private_driver' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      <h2 class="font-semibold">{% trans "Private Driver" %}</h2>
+      {{ private_form.as_p }}
+      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
+    </form>
+  <form method="post" action="{% url 'marketing:submit_fleet_driver' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      <h2 class="font-semibold">{% trans "Fleet Company" %}</h2>
+      {{ fleet_form.as_p }}
+      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
+    </form>
+  <form method="post" action="{% url 'marketing:submit_vehicle_owner' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      <h2 class="font-semibold">{% trans "Vehicle Owner" %}</h2>
+      {{ owner_form.as_p }}
+      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Submit" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

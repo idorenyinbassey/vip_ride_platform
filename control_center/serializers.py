@@ -36,7 +36,7 @@ class EmergencyIncidentSerializer(serializers.ModelSerializer):
         model = EmergencyIncident
         fields = [
             'id', 'incident_type', 'priority', 'status', 'user', 'user_name',
-            'driver', 'driver_name', 'ride_id', 'vehicle_id',
+            'driver', 'driver_name', 'ride', 'vehicle',
             'incident_latitude', 'incident_longitude', 'address', 'landmark',
             'description', 'automated_trigger', 'user_triggered',
             'assigned_operator', 'operator_name', 'response_team_type',
@@ -96,8 +96,8 @@ class EmergencyIncidentCreateSerializer(EmergencyIncidentSerializer):
     
     class Meta(EmergencyIncidentSerializer.Meta):
         fields = [
-            'incident_type', 'priority', 'user', 'driver', 'ride_id',
-            'vehicle_id', 'incident_latitude', 'incident_longitude',
+            'incident_type', 'priority', 'user', 'driver', 'ride',
+            'vehicle', 'incident_latitude', 'incident_longitude',
             'address', 'landmark', 'description', 'automated_trigger',
             'user_triggered'
         ]
@@ -135,8 +135,8 @@ class VIPMonitoringSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = VIPMonitoringSession
         fields = [
-            'id', 'user', 'user_name', 'ride_id', 'driver', 'driver_name',
-            'vehicle_id', 'monitoring_level', 'assigned_operator',
+            'id', 'user', 'user_name', 'ride', 'driver', 'driver_name',
+            'vehicle', 'monitoring_level', 'assigned_operator',
             'operator_name', 'planned_route', 'current_latitude',
             'current_longitude', 'last_location_update', 'is_active',
             'route_deviation_alert', 'speed_alert', 'duration_alert',

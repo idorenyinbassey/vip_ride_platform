@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
 
@@ -75,6 +76,7 @@ class VehicleLease(models.Model):
         max_digits=5,
         decimal_places=2,
         default=25.00,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text='Percentage of ride revenue shared with vehicle owner'
     )
     per_ride_commission = models.DecimalField(

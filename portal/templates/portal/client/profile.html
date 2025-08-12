@@ -1,0 +1,28 @@
+{% extends 'portal/base.html' %}
+{% block header %}Profile{% endblock %}
+{% block content %}
+<div class="grid gap-4 md:grid-cols-2">
+  <form class="bg-white border rounded p-4 space-y-3">
+    <div>
+      <label class="block text-sm text-slate-600">Full name</label>
+      <input class="border rounded p-2 w-full" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600">Tier</label>
+      <select class="border rounded p-2 w-full">
+        <option>Normal</option>
+        <option>Premium</option>
+        <option>VIP</option>
+      </select>
+    </div>
+    <button class="bg-[var(--brand)] text-white px-4 py-2 rounded">Save</button>
+  </form>
+  <div class="bg-white border rounded p-4">
+    <div class="font-semibold mb-2">Upgrade Options</div>
+    <div class="space-y-2">
+      <button class="w-full border rounded px-4 py-2 hover:bg-slate-50">Upgrade to Premium</button>
+      <button class="w-full border rounded px-4 py-2 hover:bg-slate-50">Upgrade to VIP</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

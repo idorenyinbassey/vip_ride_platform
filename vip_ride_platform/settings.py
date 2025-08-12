@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'django_filters',
     'django_extensions',
     'channels',
+    'marketing',
     
     # Custom apps
     'gps_tracking',
@@ -68,6 +70,7 @@ INSTALLED_APPS = [
     'control_center',
     'fleet_management',
     'vehicle_leasing',
+    'portal',
 ]
 
 MIDDLEWARE = [
@@ -76,6 +79,7 @@ MIDDLEWARE = [
     'accounts.rate_limit_middleware.RateLimitMiddleware',  # Rate limiting
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -92,7 +96,7 @@ ROOT_URLCONF = 'vip_ride_platform.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+    'DIRS': [BASE_DIR / 'marketing' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -184,6 +188,14 @@ USE_I18N = True
 
 USE_TZ = True
 
+# i18n languages supported for marketing site
+LANGUAGES = [
+    ('en', _('English')),
+    ('fr', _('French')),
+    ('ar', _('Arabic')),
+]
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -240,21 +252,30 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 # Additional Security Headers
-# Only enable SSL redirect in production (not in development)
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
-SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))  # 1 year
+# Enable SSL redirect and secure cookies by default in production
+# but allow explicit override via environment variables.
+SECURE_SSL_REDIRECT = os.environ.get(
+    'SECURE_SSL_REDIRECT', 'True' if not DEBUG else 'False'
+).lower() == 'true'
+SECURE_HSTS_SECONDS = int(
+    os.environ.get('SECURE_HSTS_SECONDS', '31536000')
+)  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # Session Security
-# Only require secure cookies in production
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+# Only require secure cookies in production by default
+SESSION_COOKIE_SECURE = os.environ.get(
+    'SESSION_COOKIE_SECURE', 'True' if not DEBUG else 'False'
+).lower() == 'true'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
 # CSRF Security
-# Only require secure CSRF cookies in production
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+# Only require secure CSRF cookies in production by default
+CSRF_COOKIE_SECURE = os.environ.get(
+    'CSRF_COOKIE_SECURE', 'True' if not DEBUG else 'False'
+).lower() == 'true'
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 
@@ -268,7 +289,9 @@ CSP_CONNECT_SRC = ("'self'",)
 CSP_FRAME_ANCESTORS = ("'none'",)
 
 # Encryption Settings for VIP GPS
-ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'your-32-byte-encryption-key-here')
+ENCRYPTION_KEY = os.environ.get(
+    'ENCRYPTION_KEY', 'your-32-byte-encryption-key-here'
+)
 
 # Channels Configuration
 ASGI_APPLICATION = 'vip_ride_platform.asgi.application'
@@ -277,7 +300,9 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            # Use REDIS_URL so it works locally and in production
+            # (supports redis://host:port/db)
+            'hosts': [REDIS_URL],
         },
     },
 }
@@ -319,13 +344,17 @@ DRIVER_SUBSCRIPTION_FEES = {
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
 PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
 PAYSTACK_WEBHOOK_SECRET = os.environ.get('PAYSTACK_WEBHOOK_SECRET', '')
-PAYSTACK_TEST_MODE = os.environ.get('PAYSTACK_TEST_MODE', 'True').lower() == 'true'
+PAYSTACK_TEST_MODE = os.environ.get(
+    'PAYSTACK_TEST_MODE', 'True'
+).lower() == 'true'
 
 FLUTTERWAVE_PUBLIC_KEY = os.environ.get('FLUTTERWAVE_PUBLIC_KEY', '')
 FLUTTERWAVE_SECRET_KEY = os.environ.get('FLUTTERWAVE_SECRET_KEY', '')
 FLUTTERWAVE_ENCRYPTION_KEY = os.environ.get('FLUTTERWAVE_ENCRYPTION_KEY', '')
 FLUTTERWAVE_WEBHOOK_SECRET = os.environ.get('FLUTTERWAVE_WEBHOOK_SECRET', '')
-FLUTTERWAVE_TEST_MODE = os.environ.get('FLUTTERWAVE_TEST_MODE', 'True').lower() == 'true'
+FLUTTERWAVE_TEST_MODE = os.environ.get(
+    'FLUTTERWAVE_TEST_MODE', 'True'
+).lower() == 'true'
 
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
@@ -335,13 +364,19 @@ STRIPE_TEST_MODE = os.environ.get('STRIPE_TEST_MODE', 'True').lower() == 'true'
 # Exchange Rate API Configuration
 FIXER_API_KEY = os.environ.get('FIXER_API_KEY', '')
 EXCHANGERATE_API_KEY = os.environ.get('EXCHANGERATE_API_KEY', '')
-EXCHANGE_RATE_UPDATE_INTERVAL = int(os.environ.get('EXCHANGE_RATE_UPDATE_INTERVAL', '6'))
+EXCHANGE_RATE_UPDATE_INTERVAL = int(
+    os.environ.get('EXCHANGE_RATE_UPDATE_INTERVAL', '6')
+)
 
 # Payment Configuration
 DEFAULT_PAYMENT_GATEWAY = os.environ.get('DEFAULT_PAYMENT_GATEWAY', 'paystack')
 PAYMENT_GATEWAY_PRIORITY = ['paystack', 'flutterwave', 'stripe']
-PAYMENT_MAX_RETRY_ATTEMPTS = int(os.environ.get('PAYMENT_MAX_RETRY_ATTEMPTS', '3'))
-PAYMENT_RETRY_DELAY_MINUTES = int(os.environ.get('PAYMENT_RETRY_DELAY_MINUTES', '5'))
+PAYMENT_MAX_RETRY_ATTEMPTS = int(
+    os.environ.get('PAYMENT_MAX_RETRY_ATTEMPTS', '3')
+)
+PAYMENT_RETRY_DELAY_MINUTES = int(
+    os.environ.get('PAYMENT_RETRY_DELAY_MINUTES', '5')
+)
 
 # Validate payment gateway configuration
 if DEFAULT_PAYMENT_GATEWAY not in PAYMENT_GATEWAY_PRIORITY:
@@ -354,27 +389,43 @@ if DEFAULT_PAYMENT_GATEWAY not in PAYMENT_GATEWAY_PRIORITY:
 
 # Validate required payment gateway keys in production
 # Only validate if STRICT_PRODUCTION_MODE is enabled
-STRICT_PRODUCTION_MODE = os.environ.get('STRICT_PRODUCTION_MODE', 'False').lower() == 'true'
+STRICT_PRODUCTION_MODE = os.environ.get(
+    'STRICT_PRODUCTION_MODE', 'False'
+).lower() == 'true'
 
 if not DEBUG and STRICT_PRODUCTION_MODE:
     missing_keys = []
     
     # Check Paystack keys
     if not PAYSTACK_PUBLIC_KEY or not PAYSTACK_SECRET_KEY:
-        missing_keys.append("Paystack keys (PAYSTACK_PUBLIC_KEY, PAYSTACK_SECRET_KEY)")
+        missing_keys.append(
+            "Paystack keys (PAYSTACK_PUBLIC_KEY, PAYSTACK_SECRET_KEY)"
+        )
     
-    # Check Flutterwave keys  
-    if not FLUTTERWAVE_PUBLIC_KEY or not FLUTTERWAVE_SECRET_KEY or not FLUTTERWAVE_ENCRYPTION_KEY:
-        missing_keys.append("Flutterwave keys (FLUTTERWAVE_PUBLIC_KEY, FLUTTERWAVE_SECRET_KEY, FLUTTERWAVE_ENCRYPTION_KEY)")
+    # Check Flutterwave keys
+    if (
+        not FLUTTERWAVE_PUBLIC_KEY
+        or not FLUTTERWAVE_SECRET_KEY
+        or not FLUTTERWAVE_ENCRYPTION_KEY
+    ):
+        missing_keys.append(
+            "Flutterwave keys (FLUTTERWAVE_PUBLIC_KEY, "
+            "FLUTTERWAVE_SECRET_KEY, FLUTTERWAVE_ENCRYPTION_KEY)"
+        )
     
     # Check Stripe keys
     if not STRIPE_PUBLISHABLE_KEY or not STRIPE_SECRET_KEY:
-        missing_keys.append("Stripe keys (STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY)")
+        missing_keys.append(
+            "Stripe keys (STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY)"
+        )
     
     if missing_keys:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured(
-            f"Missing required payment gateway keys in production: {'; '.join(missing_keys)}"
+            (
+                "Missing required payment gateway keys in production: "
+                + '; '.join(missing_keys)
+            )
         )
 AUTO_PAYOUT_THRESHOLD = float(os.environ.get('AUTO_PAYOUT_THRESHOLD', '100.00'))
 MIN_PAYOUT_AMOUNT = float(os.environ.get('MIN_PAYOUT_AMOUNT', '10.00'))

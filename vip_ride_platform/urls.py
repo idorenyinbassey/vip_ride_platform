@@ -21,6 +21,12 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Marketing site
+    path('', include('marketing.urls')),
+    # Web portal (client + driver)
+    path('portal/', include('portal.urls')),
+    # i18n endpoints (set_language)
+    path('i18n/', include('django.conf.urls.i18n')),
     
     # API URLs
     path('api/v1/accounts/', include('accounts.urls')),
@@ -41,5 +47,9 @@ urlpatterns = [
 
 # Serve media files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+    )
+    urlpatterns += static(
+        settings.STATIC_URL, document_root=settings.STATIC_ROOT
+    )

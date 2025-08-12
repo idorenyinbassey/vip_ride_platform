@@ -1,0 +1,26 @@
+{% extends 'portal/base.html' %}
+{% block header %}Ride History{% endblock %}
+{% block content %}
+<div class="bg-white border rounded">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="text-left p-3">Date</th>
+        <th class="text-left p-3">From</th>
+        <th class="text-left p-3">To</th>
+        <th class="text-left p-3">Amount</th>
+        <th class="text-left p-3">Receipt</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="border-t">
+        <td class="p-3">—</td>
+        <td class="p-3">—</td>
+        <td class="p-3">—</td>
+        <td class="p-3">—</td>
+        <td class="p-3"><a class="text-[var(--brand)]" href="#">View</a></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

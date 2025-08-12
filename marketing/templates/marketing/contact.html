@@ -1,0 +1,12 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Contact" %}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-bold mb-6">{% trans "Contact Us" %}</h1>
+  <form method="post" action="{% url 'marketing:submit_contact' %}" class="border rounded p-6 space-y-3">{% csrf_token %}
+    {{ form.as_p }}
+    <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Send" %}</button>
+  </form>
+</div>
+{% endblock %}

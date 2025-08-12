@@ -54,7 +54,11 @@ class GPSLocation(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gps_locations')
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='gps_locations'
+    )
     
     # Standard coordinates (for Normal/Premium users)
     latitude = models.DecimalField(
@@ -68,7 +72,9 @@ class GPSLocation(models.Model):
     
     # Encrypted coordinates (for VIP users)
     encrypted_coordinates = models.TextField(null=True, blank=True)
-    encryption_key_hash = models.CharField(max_length=64, null=True, blank=True)
+    encryption_key_hash = models.CharField(
+        max_length=64, null=True, blank=True
+    )
     
     # Location metadata
     accuracy_meters = models.FloatField(
@@ -104,8 +110,11 @@ class GPSLocation(models.Model):
     
     # Ride context
     ride = models.ForeignKey(
-        'rides.Ride', on_delete=models.CASCADE, 
-        related_name='gps_locations', null=True, blank=True
+        'rides.Ride',
+        on_delete=models.CASCADE,
+        related_name='gps_locations',
+        null=True,
+        blank=True,
     )
     
     # Offline support
@@ -140,30 +149,36 @@ class GPSLocation(models.Model):
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=str(self.user.id).encode(),
+            salt=str(
+                getattr(self, 'user_id', None) or getattr(self.user, 'pk', '')
+            ).encode(),
             iterations=100000,
         )
         key = base64.urlsafe_b64encode(kdf.derive(user_key.encode()))
         return Fernet(key)
     
-    def set_encrypted_coordinates(self, latitude, longitude):
+    def set_encrypted_coordinates(self, lat_value, lng_value):
         """Encrypt coordinates for VIP users"""
-        if not hasattr(self.user, 'tier') or self.user.tier != 'VIP':
+        if getattr(self.user, 'tier', None) != 'VIP':
             raise ValueError("Encryption only available for VIP users")
         
         # Use user-specific encryption key
-        user_key = f"vip_gps_{self.user.id}_{self.user.date_joined.isoformat()}"
+        _joined = getattr(self.user, 'date_joined', timezone.now())
+        _uid = getattr(self, 'user_id', None) or getattr(self.user, 'pk', '')
+        user_key = (f"vip_gps_{_uid}_" f"{_joined.isoformat()}")
         cipher = self._get_encryption_key(user_key)
         
         # Encrypt coordinates
         coordinates_data = {
-            'lat': float(latitude),
-            'lng': float(longitude),
+            'lat': float(lat_value),
+            'lng': float(lng_value),
             'timestamp': timezone.now().isoformat()
         }
         
         encrypted_data = cipher.encrypt(json.dumps(coordinates_data).encode())
-        self.encrypted_coordinates = base64.urlsafe_b64encode(encrypted_data).decode()
+        self.encrypted_coordinates = base64.urlsafe_b64encode(
+            encrypted_data
+        ).decode()
         self.encryption_key_hash = base64.urlsafe_b64encode(
             hashes.Hash(hashes.SHA256()).finalize()
         ).decode()[:64]
@@ -172,12 +187,16 @@ class GPSLocation(models.Model):
         """Decrypt coordinates for VIP users"""
         if not self.encrypted_coordinates:
             return self.latitude, self.longitude
-        
-        user_key = f"vip_gps_{self.user.id}_{self.user.date_joined.isoformat()}"
+
+        _joined = getattr(self.user, 'date_joined', timezone.now())
+        _uid = getattr(self, 'user_id', None) or getattr(self.user, 'pk', '')
+        user_key = (f"vip_gps_{_uid}_" f"{_joined.isoformat()}")
         cipher = self._get_encryption_key(user_key)
-        
+
         try:
-            encrypted_data = base64.urlsafe_b64decode(self.encrypted_coordinates.encode())
+            encrypted_data = base64.urlsafe_b64decode(
+                self.encrypted_coordinates.encode()
+            )
             decrypted_data = cipher.decrypt(encrypted_data)
             coordinates = json.loads(decrypted_data.decode())
             return coordinates['lat'], coordinates['lng']
@@ -197,7 +216,7 @@ class GPSLocation(models.Model):
         lat, lng = self.coordinates
         if lat is not None and lng is not None:
             return {
-                'latitude': float(lat), 
+                'latitude': float(lat),
                 'longitude': float(lng)
             }
         return None
@@ -273,11 +292,21 @@ class GeofenceZone(models.Model):
     def __str__(self):
         return f"{self.name} ({self.zone_type})"
     
-    def contains_point(self, latitude, longitude):
-        """Check if point is within geofence boundary using ray casting"""
+    def contains_point(self, point_or_latitude, longitude=None):
+        """Check if point is within geofence boundary using ray casting.
+        Accepts either a dict {'latitude','longitude'} or latitude, longitude floats.
+        """
         if not self.boundary_coordinates:
             return False
-        
+
+        # Support both dict and separate args
+        if longitude is None and isinstance(point_or_latitude, dict):
+            latitude = float(point_or_latitude.get('latitude'))
+            longitude = float(point_or_latitude.get('longitude'))
+        else:
+            latitude = float(point_or_latitude)
+            longitude = float(longitude)
+
         x, y = float(longitude), float(latitude)
         polygon = self.boundary_coordinates
         
@@ -524,10 +553,10 @@ class OfflineGPSBuffer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offline_gps_buffer')
     device_id = models.CharField(max_length=100)
     
-    # Buffered location data
+    # Buffered location data (legacy JSON for backward compatibility)
     buffered_locations = models.JSONField(
         default=list,
-        help_text="Array of GPS locations recorded offline"
+        help_text="Array of GPS locations recorded offline (legacy)"
     )
     
     # Buffer metadata
@@ -568,13 +597,30 @@ class OfflineGPSBuffer(models.Model):
         created_locations = []
         errors = []
         
-        for location_data in self.buffered_locations:
+        # Prefer normalized related rows if present
+        # Access reverse relation via getattr to satisfy static analyzers
+        _points_manager = (
+            getattr(self, 'buffered_points', None)
+            or getattr(self, 'bufferedlocation_set', None)
+        )
+        normalized_points = []
+        if _points_manager is not None:
+            normalized_points = list(_points_manager.all().values(
+                'latitude', 'longitude', 'timestamp', 'accuracy',
+                'altitude', 'bearing', 'speed_kmh', 'battery_level'
+            ))
+        locations_iter = normalized_points or self.buffered_locations
+
+        for location_data in locations_iter:
             try:
                 gps_location = GPSLocation.objects.create(
                     user=self.user,
                     latitude=location_data.get('latitude'),
                     longitude=location_data.get('longitude'),
-                    accuracy_meters=location_data.get('accuracy_meters', 0),
+                    accuracy_meters=(
+                        location_data.get('accuracy')
+                        or location_data.get('accuracy_meters', 0)
+                    ),
                     device_timestamp=location_data.get('timestamp'),
                     is_offline_buffered=True,
                     sync_status='SYNCED'
@@ -592,3 +638,27 @@ class OfflineGPSBuffer(models.Model):
         self.save()
         
         return created_locations, errors
+
+
+class BufferedLocation(models.Model):
+    """Normalized buffered GPS point linked to OfflineGPSBuffer"""
+    buffer = models.ForeignKey(
+        OfflineGPSBuffer,
+        on_delete=models.CASCADE,
+        related_name='buffered_points'
+    )
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    timestamp = models.DateTimeField()
+    accuracy = models.FloatField(default=0)
+    altitude = models.FloatField(null=True, blank=True)
+    bearing = models.FloatField(null=True, blank=True)
+    speed_kmh = models.FloatField(null=True, blank=True)
+    battery_level = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'buffered_locations'
+        indexes = [
+            models.Index(fields=['buffer']),
+            models.Index(fields=['timestamp']),
+        ]

@@ -1,0 +1,22 @@
+{% extends 'marketing/base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Hotel Partnerships" %}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-bold mb-6">{% trans "Partner with VIP Ride" %}</h1>
+  <div class="grid md:grid-cols-2 gap-8 items-start">
+    <div class="prose">
+      <p>{% trans "Join our hotel partnership program for premium guest transport, priority pickups, and unified billing." %}</p>
+      <ul class="list-disc pl-5">
+        <li>{% trans "Dedicated VIP fleet and concierge" %}</li>
+        <li>{% trans "Revenue share and reporting" %}</li>
+        <li>{% trans "Custom hotel dashboards" %}</li>
+      </ul>
+    </div>
+  <form method="post" action="{% url 'marketing:submit_hotel_partner' %}" class="border rounded p-4 space-y-3">{% csrf_token %}
+      {{ form.as_p }}
+      <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Request Partnership" %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

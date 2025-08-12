@@ -1,0 +1,60 @@
+{% load i18n %}
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Portal{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+  <style>
+    :root{
+      --brand:#0ea5e9; /* sky-500 */
+      --brand-dark:#0284c7; /* sky-600 */
+      --accent:#22c55e; /* green-500 */
+      --muted:#64748b; /* slate-500 */
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex bg-slate-50">
+  <aside class="hidden md:block w-64 bg-white border-r">
+    <div class="p-4 font-bold text-lg text-slate-800">VIP Ride Portal</div>
+    <nav class="px-2 text-slate-700 space-y-1">
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:home' %}">Dashboard</a>
+      <div class="px-3 pt-2 text-xs uppercase tracking-wide text-slate-400">Client</div>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_profile' %}">Profile</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_book_ride' %}">Book Ride</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_ride_history' %}">Ride History</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_payments' %}">Payments</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_vip_features' %}">VIP</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_premium_features' %}">Premium</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_wallet' %}">Wallet</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:client_support' %}">Support</a>
+      <div class="px-3 pt-4 text-xs uppercase tracking-wide text-slate-400">Driver</div>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_onboarding' %}">Onboarding</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_documents' %}">Documents</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_earnings' %}">Earnings</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_vehicles' %}">Vehicles</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_subscription' %}">Subscription</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_performance' %}">Performance</a>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" href="{% url 'portal:driver_fleet_integration' %}">Fleet</a>
+    </nav>
+  </aside>
+  <main class="flex-1 min-w-0">
+    <header class="bg-white border-b sticky top-0 z-10">
+      <div class="px-4 py-3 flex items-center justify-between">
+        <button class="md:hidden px-3 py-2 border rounded">Menu</button>
+        <div class="font-semibold">{% block header %}Dashboard{% endblock %}</div>
+        <div class="flex items-center gap-3 text-sm">
+          <a href="/" class="text-slate-600 hover:text-slate-900">Marketing</a>
+          <a href="/logout" class="text-slate-600 hover:text-slate-900">Logout</a>
+        </div>
+      </div>
+    </header>
+    <div class="p-4 md:p-6">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</body>
+</html>

@@ -6,7 +6,6 @@ VIP monitoring, emergency response, and security models
 from django.db import models
 from django.conf import settings
 import uuid
-from decimal import Decimal
 
 
 class IncidentType(models.TextChoices):
@@ -80,8 +79,20 @@ class EmergencyIncident(models.Model):
     )
     
     # Ride Information
-    ride_id = models.UUIDField(null=True, blank=True)
-    vehicle_id = models.UUIDField(null=True, blank=True)
+    ride = models.ForeignKey(
+        'rides.Ride',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emergency_incidents'
+    )
+    vehicle = models.ForeignKey(
+        'fleet_management.Vehicle',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='emergency_incidents'
+    )
     
     # Location Information (using regular fields instead of GeoDjango)
     incident_latitude = models.DecimalField(
@@ -145,14 +156,15 @@ class EmergencyIncident(models.Model):
             models.Index(fields=['incident_type', 'priority']),
             models.Index(fields=['status']),
             models.Index(fields=['user']),
-            models.Index(fields=['ride_id']),
+            models.Index(fields=['ride']),
             models.Index(fields=['created_at']),
             models.Index(fields=['assigned_operator']),
         ]
         ordering = ['-created_at', 'priority']
     
     def __str__(self):
-        return f"{self.incident_type.upper()} - {self.user.get_full_name()} - {self.created_at}"
+        user_name = self.user.get_full_name()
+        return f"{self.incident_type.upper()} - {user_name} - {self.created_at}"
     
     @property
     def response_time_minutes(self):
@@ -192,13 +204,25 @@ class VIPMonitoringSession(models.Model):
         on_delete=models.CASCADE,
         related_name='monitoring_sessions'
     )
-    ride_id = models.UUIDField()
+    ride = models.ForeignKey(
+        'rides.Ride',
+        on_delete=models.CASCADE,
+        related_name='vip_monitoring_sessions',
+        null=True,
+        blank=True,
+    )
     driver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='vip_monitoring_sessions'
     )
-    vehicle_id = models.UUIDField()
+    vehicle = models.ForeignKey(
+        'fleet_management.Vehicle',
+        on_delete=models.CASCADE,
+        related_name='vip_monitoring_sessions',
+        null=True,
+        blank=True,
+    )
     
     # Monitoring Details
     monitoring_level = models.CharField(
@@ -261,14 +285,15 @@ class VIPMonitoringSession(models.Model):
         db_table = 'vip_monitoring_sessions'
         indexes = [
             models.Index(fields=['user']),
-            models.Index(fields=['ride_id']),
+            models.Index(fields=['ride']),
             models.Index(fields=['is_active']),
             models.Index(fields=['assigned_operator']),
             models.Index(fields=['session_start']),
         ]
     
     def __str__(self):
-        return f"VIP Monitor - {self.user.get_full_name()} - {self.session_start}"
+        name = self.user.get_full_name()
+        return f"VIP Monitor - {name} - {self.session_start}"
     
     @property
     def is_overdue_checkin(self):
@@ -280,7 +305,7 @@ class VIPMonitoringSession(models.Model):
         from django.utils import timezone
         
         overdue_threshold = (
-            self.last_check_in + 
+            self.last_check_in +
             timedelta(minutes=self.check_in_interval_minutes + 5)
         )
         return timezone.now() > overdue_threshold

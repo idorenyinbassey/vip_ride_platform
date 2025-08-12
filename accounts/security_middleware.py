@@ -67,10 +67,14 @@ class CustomSecurityMiddleware:
         
         # Content Security Policy (basic)
         if not response.get('Content-Security-Policy'):
+            # Allow Tailwind CDN and HTMX (unpkg) so marketing site assets load
             csp_directives = [
                 "default-src 'self'",
-                "script-src 'self' 'unsafe-inline'",
-                "style-src 'self' 'unsafe-inline'",
+                (
+                    "script-src 'self' 'unsafe-inline' "
+                    "https://cdn.tailwindcss.com https://unpkg.com"
+                ),
+                "style-src 'self' 'unsafe-inline' https:",
                 "img-src 'self' data: https:",
                 "font-src 'self' https:",
                 "connect-src 'self'",

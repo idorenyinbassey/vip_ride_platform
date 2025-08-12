@@ -1,0 +1,28 @@
+{% extends 'portal/base.html' %}
+{% block header %}Documents{% endblock %}
+{% block content %}
+<div class="bg-white border rounded p-4">
+  <div class="font-semibold mb-2">Upload & Verification</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-600">License Front</label>
+      <input type="file" class="border rounded p-2 w-full" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600">License Back</label>
+      <input type="file" class="border rounded p-2 w-full" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600">Identity Document</label>
+      <input type="file" class="border rounded p-2 w-full" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600">Proof of Address</label>
+      <input type="file" class="border rounded p-2 w-full" />
+    </div>
+  </div>
+  <div class="mt-4">
+    <button class="bg-[var(--brand)] text-white px-4 py-2 rounded">Submit</button>
+  </div>
+</div>
+{% endblock %}
