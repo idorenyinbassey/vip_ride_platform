@@ -4,6 +4,9 @@ Import this in development to override production security settings
 
 Usage:
     python manage.py runserver --settings=vip_ride_platform.dev_settings
+    
+Or set in .env:
+    DJANGO_SETTINGS_MODULE=vip_ride_platform.dev_settings
 """
 from .settings import *
 
@@ -48,6 +51,17 @@ INTERNAL_IPS = ['127.0.0.1', 'localhost']
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/portal/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+# Print development configuration status (only once)
+if not globals().get('_DEV_SETTINGS_PRINTED'):
+    print("🔧 Development settings loaded - HTTP mode enabled")
+    print("🚀 Development overrides applied:")
+    print("   - DEBUG: True")
+    print("   - SECURE_SSL_REDIRECT: False")
+    print("   - SESSION_COOKIE_SECURE: False")
+    print("   - CSRF_COOKIE_SECURE: False")
+    print("📝 Ready for development on HTTP!")
+    globals()['_DEV_SETTINGS_PRINTED'] = True
 
 # Development payment gateways (all in test mode)
 PAYSTACK_TEST_MODE = True

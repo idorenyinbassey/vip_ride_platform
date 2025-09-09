@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django_filters',
     'django_extensions',
     'channels',
+    'django_prometheus',  # Prometheus metrics
     'marketing',
     
     # Custom apps
@@ -64,7 +65,7 @@ INSTALLED_APPS = [
     'rides',
     'payments',
     'pricing',
-    'hotels',
+    
     'hotel_partnerships',
     'notifications',
     'control_center',
@@ -74,6 +75,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',  # Prometheus metrics (first)
     'corsheaders.middleware.CorsMiddleware',
     'accounts.security_middleware.CustomSecurityMiddleware',  # Custom security middleware
     'accounts.rate_limit_middleware.RateLimitMiddleware',  # Rate limiting
@@ -89,6 +91,7 @@ MIDDLEWARE = [
     # RBAC Middleware (add after authentication)
     'accounts.rbac_middleware.RBACauditMiddleware',
     'accounts.rbac_middleware.SecurityMonitoringMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',  # Prometheus metrics (last)
 ]
 
 ROOT_URLCONF = 'vip_ride_platform.urls'
@@ -211,10 +214,45 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# JWT Configuration (consolidated from jwt_settings.py)
+SIMPLE_JWT = {
+    # Token lifetimes (tier-based)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_MINUTES', '15'))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_DAYS', '7'))),
+    
+    # Token rotation and blacklisting
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    
+    # Token configuration
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': os.environ.get('JWT_SECRET_KEY', SECRET_KEY),
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': 'vip-ride-platform',
+    
+    # Header configuration
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    
+    # Token claims
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    
+    # Sliding token configuration
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -232,8 +270,9 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour'
+        'anon': os.environ.get('API_RATE_ANON', '100/hour'),
+        'user': os.environ.get('API_RATE_USER', '1000/hour'),
+        'vip': os.environ.get('API_RATE_VIP', '5000/hour'),
     }
 }
 
@@ -287,6 +326,47 @@ CSP_IMG_SRC = ("'self'", "data:", "https:")
 CSP_FONT_SRC = ("'self'", "https:")
 CSP_CONNECT_SRC = ("'self'",)
 CSP_FRAME_ANCESTORS = ("'none'",)
+
+# RBAC Configuration (consolidated from rbac_settings.py)
+AUTH_USER_MODEL = 'accounts.User'
+
+# RBAC Permissions
+RBAC_SETTINGS = {
+    'ENABLE_RBAC': True,
+    'ENABLE_AUDIT_LOGGING': True,
+    'ENABLE_SECURITY_MONITORING': True,
+    'SESSION_TIMEOUT_MINUTES': int(os.environ.get('SESSION_TIMEOUT_MINUTES', '60')),
+    'MAX_LOGIN_ATTEMPTS': int(os.environ.get('MAX_LOGIN_ATTEMPTS', '5')),
+    'LOCKOUT_DURATION_MINUTES': int(os.environ.get('LOCKOUT_DURATION_MINUTES', '30')),
+}
+
+# Role-based access control permissions
+RBAC_ROLES = {
+    'NORMAL_USER': {
+        'permissions': ['rides.view_ride', 'rides.create_ride', 'accounts.view_profile'],
+        'tier_access': ['NORMAL']
+    },
+    'PREMIUM_USER': {
+        'permissions': ['rides.view_ride', 'rides.create_ride', 'hotels.book_hotel', 'accounts.view_profile'],
+        'tier_access': ['NORMAL', 'PREMIUM']
+    },
+    'VIP_USER': {
+        'permissions': ['rides.view_ride', 'rides.create_ride', 'hotels.book_hotel', 'gps.encrypted_tracking', 'accounts.view_profile'],
+        'tier_access': ['NORMAL', 'PREMIUM', 'VIP']
+    },
+    'DRIVER': {
+        'permissions': ['rides.accept_ride', 'rides.complete_ride', 'gps.share_location'],
+        'tier_access': ['NORMAL', 'PREMIUM', 'VIP']
+    },
+    'FLEET_MANAGER': {
+        'permissions': ['fleet.manage_vehicles', 'fleet.manage_drivers', 'rides.view_analytics'],
+        'tier_access': ['PREMIUM', 'VIP']
+    },
+    'ADMIN': {
+        'permissions': ['*'],  # All permissions
+        'tier_access': ['NORMAL', 'PREMIUM', 'VIP']
+    }
+}
 
 # Encryption Settings for VIP GPS
 ENCRYPTION_KEY = os.environ.get(

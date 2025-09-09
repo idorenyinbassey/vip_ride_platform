@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vip-ride-web
+  namespace: vip-ride-platform
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vip-ride-web
+  template:
+    metadata:
+      labels:
+        app: vip-ride-web
+    spec:
+      containers:
+      - name: web
+        image: your-registry/vip-ride-platform:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: vip-ride-config
+        - secretRef:
+            name: app-secrets
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vip-ride-service
+  namespace: vip-ride-platform
+spec:
+  selector:
+    app: vip-ride-web
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP

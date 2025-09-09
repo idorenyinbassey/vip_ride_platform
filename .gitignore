@@ -197,3 +197,26 @@ dmypy.json
 
 # Cython
 cython_debug/
+
+# Test file backups
+backup_old_files/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Test coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Logs
+logs/
+*.log

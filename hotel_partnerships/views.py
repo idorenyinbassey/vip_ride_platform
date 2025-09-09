@@ -457,3 +457,80 @@ class PMSIntegrationLogViewSet(viewsets.ReadOnlyModelViewSet):
             if user.is_superuser:
                 return PMSIntegrationLog.objects.all()
             return PMSIntegrationLog.objects.none()
+
+
+# Customer-facing views (consolidated from hotels app)
+from math import radians, cos, sin, asin, sqrt
+
+class CustomerHotelViewSet(viewsets.ReadOnlyModelViewSet):
+    """Customer-facing hotel views with search and discovery"""
+    queryset = Hotel.objects.filter(status='ACTIVE')
+    serializer_class = HotelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """Search hotels with filters"""
+        queryset = self.get_queryset()
+        
+        # Apply filters
+        location = request.GET.get('location')
+        check_in = request.GET.get('check_in')
+        check_out = request.GET.get('check_out')
+        guests = request.GET.get('guests', 1)
+        
+        if location:
+            queryset = queryset.filter(
+                Q(name__icontains=location) |
+                Q(address__icontains=location) |
+                Q(city__icontains=location)
+            )
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def nearby(self, request):
+        """Get nearby hotels based on coordinates"""
+        lat = request.GET.get('latitude')
+        lng = request.GET.get('longitude')
+        
+        if not lat or not lng:
+            return Response({'error': 'Latitude and longitude required'}, status=400)
+        
+        queryset = self.get_queryset()
+        # Implement distance calculation and filtering
+        serializer = self.get_serializer(queryset[:10], many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def popular(self, request):
+        """Get popular hotels"""
+        queryset = self.get_queryset().annotate(
+            booking_count=Count('hotelbooking')
+        ).order_by('-booking_count')[:10]
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class CustomerHotelBookingViewSet(viewsets.ModelViewSet):
+    """Customer hotel booking management"""
+    serializer_class = HotelBookingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Only show user's own bookings"""
+        return HotelBooking.objects.filter(
+            guest__user=self.request.user
+        ).select_related('hotel', 'room', 'guest')
+    
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """Cancel a booking"""
+        booking = self.get_object()
+        if booking.status not in ['CANCELLED', 'CHECKED_OUT']:
+            booking.status = 'CANCELLED'
+            booking.save()
+            return Response({'status': 'cancelled'})
+        return Response({'error': 'Cannot cancel'}, status=400)

@@ -46,17 +46,21 @@ urlpatterns = [
     path('i18n/', include('django.conf.urls.i18n')),
     
     # API URLs
+    path('api/v1/', include('vip_ride_platform.api_urls')),  # API Root
     path('api/v1/accounts/', include('accounts.urls')),
     path('api/v1/rides/', include('rides.urls')),
     path('api/v1/fleet/', include('fleet_management.urls')),
     path('api/v1/leasing/', include('vehicle_leasing.urls')),
-    path('api/v1/hotels/', include('hotels.urls')),
     path('api/v1/hotel-partnerships/', include('hotel_partnerships.urls')),
     path('api/v1/payments/', include('payments.urls')),
     path('api/v1/pricing/', include('pricing.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
     path('api/v1/control-center/', include('control_center.urls')),
     path('api/v1/gps/', include('gps_tracking.urls')),
+    
+    # Monitoring & Health
+    path('', include('django_prometheus.urls')),  # Prometheus metrics endpoint at /metrics
+    path('health/', include('health.urls')),  # Health check endpoint
     
     # API Authentication
     path('api-auth/', include('rest_framework.urls')),
