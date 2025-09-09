@@ -52,6 +52,7 @@ USER_TIER_SETTINGS = {
             'requests_per_hour': 1000,
         },
         'mfa_required': False,
+        'mfa_methods': ['email', 'sms'],  # Normal users have basic MFA options if they want it
         'session_timeout': timedelta(hours=2),
     },
     'premium': {
@@ -62,10 +63,11 @@ USER_TIER_SETTINGS = {
             'api_calls_per_minute': 120,
             'requests_per_hour': 2000,
         },
-        'mfa_required': False,
+        'mfa_required': True,  # Premium users now require MFA
+        'mfa_methods': ['email', 'sms', 'totp'],  # Available MFA methods
         'session_timeout': timedelta(hours=4),
     },
-    'vip': {
+        'vip': {
         'access_token_lifetime': timedelta(minutes=30),
         'refresh_token_lifetime': timedelta(days=30),
         'rate_limit': {
@@ -74,20 +76,9 @@ USER_TIER_SETTINGS = {
             'requests_per_hour': 5000,
         },
         'mfa_required': True,
+        'mfa_methods': ['email', 'sms', 'totp', 'biometric'],  # VIP gets all methods including biometric
         'session_timeout': timedelta(hours=8),
         'require_biometric': True,
-    },
-    'concierge': {
-        'access_token_lifetime': timedelta(hours=1),
-        'refresh_token_lifetime': timedelta(days=30),
-        'rate_limit': {
-            'rides_per_hour': 100,
-            'api_calls_per_minute': 600,
-            'requests_per_hour': 10000,
-        },
-        'mfa_required': True,
-        'session_timeout': timedelta(hours=12),
-        'admin_privileges': True,
     }
 }
 

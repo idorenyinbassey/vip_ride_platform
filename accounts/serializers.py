@@ -37,12 +37,11 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
         self.ip_address = get_client_ip(self.request) if self.request else None
         
     def validate(self, attrs):
-        """Enhanced validation with MFA and security checks"""
-        # Handle both email and username fields
-        email = attrs.get('email') or attrs.get('username')
+        """Validate login credentials with tier-specific logic"""
+        email = attrs.get('email')
         password = attrs.get('password')
-        device_fingerprint = attrs.get('device_fingerprint', '')
-        mfa_token = attrs.get('mfa_token', '')
+        device_fingerprint = attrs.get('device_fingerprint')
+        mfa_token = attrs.get('mfa_token')
         
         # Also check request data if available
         if hasattr(self.context.get('request'), '_full_data'):
@@ -103,9 +102,12 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Check MFA requirements
         mfa_required = self._check_mfa_requirements(user, device_fingerprint)
         if mfa_required and not mfa_token:
+            # Generate temporary token for MFA verification
+            temp_token = self._generate_temp_token(user)
             raise serializers.ValidationError({
                 'mfa_required': True,
                 'mfa_methods': self._get_available_mfa_methods(user),
+                'temp_token': temp_token,
                 'message': _('Multi-factor authentication required.')
             })
         
@@ -147,8 +149,8 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
     
     def _check_mfa_requirements(self, user, device_fingerprint):
         """Check if MFA is required for this login"""
-        # VIP users always require MFA
-        if user.tier == 'vip':
+        # Premium and VIP users always require MFA
+        if user.tier in ['premium', 'vip']:
             return True
         
         # Check tier-specific MFA settings
@@ -163,6 +165,35 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Check MFA settings
         mfa_config = MFA_SETTINGS.get(user.tier, {})
         return mfa_config.get('required', False)
+    
+    def _generate_temp_token(self, user):
+        """Generate temporary token for MFA workflow"""
+        try:
+            import jwt
+            import time
+            from django.conf import settings
+            
+            payload = {
+                'user_id': str(user.id),  # Convert UUID to string  
+                'email': user.email,
+                'type': 'mfa_temp',
+                'exp': int(time.time()) + 300,  # 5 minutes expiry
+                'iat': int(time.time())
+            }
+            
+            temp_token = jwt.encode(
+                payload,
+                settings.SECRET_KEY,
+                algorithm='HS256'
+            )
+            
+            return temp_token
+        except Exception as e:
+            # Return a simple token if JWT fails
+            import hashlib
+            import time
+            simple_token = hashlib.sha256(f"{user.id}{time.time()}".encode()).hexdigest()[:32]
+            return simple_token
     
     def _get_available_mfa_methods(self, user):
         """Get available MFA methods for user"""

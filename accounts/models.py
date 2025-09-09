@@ -653,3 +653,7 @@ class SecurityEvent(models.Model):
     
     def __str__(self):
         return f"Security Event: {self.event_type} - {self.severity}"
+
+
+# Import Premium Card models
+from .premium_card_models import PremiumDigitalCard, PremiumCardTransaction

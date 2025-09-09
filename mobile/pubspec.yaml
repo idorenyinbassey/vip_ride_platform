@@ -1,0 +1,99 @@
+name: vip_ride_app
+description: "VIP Ride-Hailing Platform - Flutter Mobile App for Clients and Drivers"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  material_design_icons_flutter: ^7.0.7296
+
+  # State Management
+  provider: ^6.1.2
+
+  # HTTP & API
+  dio: ^5.4.3+1
+  retrofit: ^4.1.0
+  json_annotation: ^4.8.1
+
+  # MFA & Security
+  otp: ^3.1.4  # For TOTP generation/validation
+  qr_flutter: ^4.1.0  # For QR code display
+  mobile_scanner: ^5.2.3  # For QR code scanning
+  pin_code_fields: ^8.0.1  # For OTP input
+
+  # Storage & Security
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.2.2
+
+  # Maps & Location
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  geolocator: ^10.1.1
+  geocoding: ^3.0.0
+
+  # Real-time Communication
+  socket_io_client: ^2.0.3+1
+
+  # Payments
+  flutter_stripe: ^10.1.1
+  pay: ^1.1.2
+
+  # UI Components
+  flutter_launcher_icons: ^0.13.1
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  lottie: ^3.1.2
+  
+  # Charts & Analytics
+  fl_chart: ^0.68.0
+  
+  # Utilities
+  intl: ^0.20.2
+  url_launcher: ^6.2.5
+  permission_handler: ^11.3.1
+  image_picker: ^1.0.7
+  
+  # Local Database
+  sqflite: ^2.3.2
+  
+  # Notifications
+  flutter_local_notifications: ^17.2.1+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  
+  # Code Generation
+  retrofit_generator: ^8.1.0
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.9
+
+flutter:
+  uses-material-design: true
+
+  # App assets
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+
+  # Using system fonts for now
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+
+  # flutter_launcher_icons:
+  #   android: "launcher_icon"
+  #   ios: true
+  #   image_path: "assets/icons/app_icon.png"
+  #   min_sdk_android: 21

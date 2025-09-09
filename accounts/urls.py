@@ -1,6 +1,8 @@
 # JWT Authentication URL Configuration
 """
-URL patterns for JWT authentication endpoints
+URL pa    # Premium Digital Card endpoints
+    path('premium-cards/payment-intent/', views.PaymentIntentView.as_view(), name='premium_card_payment_intent'),
+    path('premium-cards/purchase/', views.PremiumCardPurchaseView.as_view(), name='premium_card_purchase'),erns for JWT authentication endpoints
 """
 
 from django.urls import path, include
@@ -12,12 +14,19 @@ from .views import (
     LogoutView,
     UserRegistrationView,
     PasswordChangeView,
-    MFASetupView,
     MFAVerificationView,
     UserProfileView,
     DeviceManagementView,
     user_security_status,
     force_logout_all_sessions
+)
+
+from .premium_card_views import (
+    PremiumCardPurchaseView,
+    PremiumCardActivationView,
+    PremiumCardListView,
+    user_premium_status,
+    PaymentIntentView
 )
 
 app_name = 'accounts'
@@ -32,15 +41,21 @@ urlpatterns = [
     # Password management
     path('password/change/', PasswordChangeView.as_view(), name='password_change'),
     
-    # Multi-factor authentication
-    path('mfa/setup/', MFASetupView.as_view(), name='mfa_setup'),
-    path('mfa/verify/', MFAVerificationView.as_view(), name='mfa_verify'),
+    # MFA endpoints
+    path('auth/mfa/verify/', MFAVerificationView.as_view(), name='mfa-verification'),
     
     # User profile
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     
     # Device management
     path('devices/', DeviceManagementView.as_view(), name='device_management'),
+    
+    # Premium Digital Card endpoints
+    path('premium-cards/payment-intent/', PaymentIntentView.as_view(), name='premium_card_payment_intent'),
+    path('premium-cards/purchase/', PremiumCardPurchaseView.as_view(), name='premium_card_purchase'),
+    path('premium-cards/activate/', PremiumCardActivationView.as_view(), name='premium_card_activation'),
+    path('premium-cards/', PremiumCardListView.as_view(), name='premium_cards_list'),
+    path('premium-status/', user_premium_status, name='user_premium_status'),
     
     # Security features
     path('security/status/', user_security_status, name='security_status'),
