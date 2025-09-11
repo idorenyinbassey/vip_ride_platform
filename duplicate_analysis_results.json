@@ -4,11 +4,17 @@
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/consolidate_hotels.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/consolidate_hotels_simple.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/verify_consolidation.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/check_users.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_mfa_integration.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_tier_system.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_totp_implementation.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_mfa_workflow.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/totp_implementation_summary.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/accounts/__init__.py",
-    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/accounts/payment_service_new.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/control_center/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/fleet_management/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/gps_tracking/__init__.py",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/gps_tracking/encryption.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/hotel_partnerships/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/notifications/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/rides/__init__.py",
@@ -278,7 +284,7 @@
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/hotel_partnerships/management/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/hotel_partnerships/management/commands/__init__.py",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/services/premium_card_service_clean.dart",
-    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/shared/premium_card_payment_screen.dart",
+    "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/vip/vip_client_app_clean.dart",
     "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/TEST_CLEANUP_SUMMARY.md"
   ],
   "duplicates": {
@@ -453,15 +459,12 @@
     ],
     "1187b2d64afa9da5613f655544cffe4e": [
       "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/dartpad/web_plugin_registrant.dart",
-      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/flutter_build/0fab30234888e39fb70f8b7bfa60da44/web_plugin_registrant.dart"
+      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/flutter_build/0fab30234888e39fb70f8b7bfa60da44/web_plugin_registrant.dart",
+      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/flutter_build/4ff4128b5a37cbacbf9ced8944be6a62/web_plugin_registrant.dart"
     ],
-    "ee449ce809fa874de0c26372067f5da5": [
-      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/regular/regular_client_app.dart",
-      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/regular/regular_client_app_clean.dart"
-    ],
-    "6f08df4020fc72c376f85213a4cdd569": [
-      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/vip/vip_client_app.dart",
-      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/vip/vip_client_app_clean.dart"
+    "52ad61155874d1f2703f2abea8a989e4": [
+      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/flutter_build/0fab30234888e39fb70f8b7bfa60da44/main.dart",
+      "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/.dart_tool/flutter_build/4ff4128b5a37cbacbf9ced8944be6a62/main.dart"
     ],
     "2c872dbe60f4ba70fb85356113d8b35e": [
       "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/.venv/lib/python3.13/site-packages/rest_framework/static/rest_framework/js/jquery-3.7.1.min.js",
@@ -957,7 +960,7 @@
       "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/.venv/lib/python3.13/site-packages/django/forms/jinja2/django/forms/errors/list/text.txt"
     ]
   },
-  "total_files": 7083,
-  "analyzed_files": 6803,
+  "total_files": 7092,
+  "analyzed_files": 6806,
   "cleanup_script": "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/cleanup_duplicates.sh"
 }

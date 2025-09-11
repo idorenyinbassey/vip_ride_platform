@@ -794,6 +794,86 @@ class MFAVerificationView(APIView):
         return f"{code:08d}"
 
 
+class MFAStatusView(APIView):
+    """Check MFA requirement status and guide user setup"""
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Get user's MFA status and requirements"""
+        user = request.user
+        
+        response_data = {
+            'mfa_required': user.mfa_required,
+            'mfa_enabled': user.mfa_enabled,
+            'mfa_setup_completed': user.mfa_setup_completed,
+            'needs_mfa_setup': user.needs_mfa_setup,
+            'has_active_methods': user.has_active_mfa_methods,
+            'tier': user.tier,
+            'mfa_setup_date': user.mfa_setup_date,
+        }
+        
+        # Add available MFA methods based on tier
+        if user.tier in ['vip', 'vip_premium']:
+            response_data['available_methods'] = ['totp', 'sms', 'email', 'backup']
+            response_data['recommended_method'] = 'totp'
+        else:
+            response_data['available_methods'] = ['email']
+            response_data['recommended_method'] = 'email'
+        
+        # Add active methods details
+        active_methods = []
+        for token in user.mfa_tokens.filter(is_active=True):
+            method_info = {
+                'type': token.token_type,
+                'is_primary': token.is_primary,
+                'created_at': token.created_at,
+                'last_used_at': token.last_used_at
+            }
+            
+            if token.token_type == 'sms':
+                method_info['phone_number'] = token.phone_number
+            elif token.token_type == 'email':
+                method_info['email_address'] = token.email_address
+            elif token.token_type == 'backup':
+                method_info['codes_remaining'] = len(token.backup_codes)
+            
+            active_methods.append(method_info)
+        
+        response_data['active_methods'] = active_methods
+        
+        # Determine next steps for user
+        if user.needs_mfa_setup:
+            response_data['next_step'] = 'setup_mfa'
+            response_data['message'] = 'MFA setup is required for your VIP account. Please set up at least one authentication method.'
+        elif user.mfa_required and not user.has_active_mfa_methods:
+            response_data['next_step'] = 'setup_mfa'
+            response_data['message'] = 'No active MFA methods found. Please set up authentication.'
+        else:
+            response_data['next_step'] = 'none'
+            response_data['message'] = 'MFA is properly configured.'
+        
+        return Response(response_data)
+    
+    def post(self, request):
+        """Mark MFA setup as completed (called after successful setup)"""
+        user = request.user
+        
+        if user.has_active_mfa_methods:
+            user.setup_mfa_completed()
+            
+            return Response({
+                'message': 'MFA setup completed successfully.',
+                'mfa_setup_completed': True,
+                'mfa_setup_date': user.mfa_setup_date
+            })
+        else:
+            return Response(
+                {'error': 'No active MFA methods found. Please set up at least one method first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class UserProfileView(RetrieveUpdateAPIView):
     """User profile view"""
     

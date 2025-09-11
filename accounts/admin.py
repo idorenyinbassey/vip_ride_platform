@@ -275,6 +275,28 @@ class SecurityEventAdmin(admin.ModelAdmin):
         return True
 
 
+# VIP Card Admin Registration
+try:
+    from .vip_card_admin import (
+        VIPDigitalCardAdmin, CardActivationHistoryAdmin, CardBatchGenerationAdmin
+    )
+    from .vip_card_models import (
+        VIPDigitalCard, CardActivationHistory, CardBatchGeneration
+    )
+    
+    # Remove the @admin.register decorators and register manually
+    admin.site.register(VIPDigitalCard, VIPDigitalCardAdmin)
+    admin.site.register(CardActivationHistory, CardActivationHistoryAdmin)
+    admin.site.register(CardBatchGeneration, CardBatchGenerationAdmin)
+    
+except ImportError as e:
+    # VIP card admin not available yet
+    pass
+except Exception as e:
+    # Handle other registration errors
+    print(f"VIP card admin registration error: {e}")
+
+
 # Admin site customization
 admin.site.site_header = "VIP Ride-Hailing Platform - Accounts Management"
 admin.site.site_title = "Accounts Admin"

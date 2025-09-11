@@ -18,7 +18,7 @@ from rest_framework.generics import ListAPIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.openapi import OpenApiTypes
 
-from core.encryption import GPSEncryptionManager
+from core.encryption import GPSEncryptionManager, EncryptedLocation, GPSCoordinates
 from core.gps_models import (
     GPSEncryptionSession,
     EncryptedGPSData,
@@ -99,7 +99,7 @@ class GPSKeyExchangeView(APIView):
             # Validate ride exists and user has access
             ride_id = serializer.validated_data['ride_id']
             try:
-                ride = Ride.objects.get(id=ride_id, user=request.user)
+                ride = Ride.objects.get(id=ride_id, rider=request.user)  # Fixed: user -> rider
             except Ride.DoesNotExist:
                 log_audit_event(
                     'unauthorized_access', 'warning',
@@ -127,14 +127,31 @@ class GPSKeyExchangeView(APIView):
                 )
             
             # Initialize encryption manager
-            encryption_manager = GPSEncryptionManager()
+            from core.encryption import get_encryption_manager
+            encryption_manager = get_encryption_manager()
             
             # Perform key exchange
             client_public_key = serializer.validated_data['client_public_key']
-            session_result = encryption_manager.start_encryption_session(
-                ride_id=str(ride_id),
-                client_public_key=client_public_key
-            )
+            try:
+                session_id, server_public_key = encryption_manager.create_encryption_session(
+                    ride_id=str(ride_id),
+                    peer_public_key_b64=client_public_key
+                )
+                
+                session_result = {
+                    'success': True,
+                    'session_id': session_id,
+                    'server_public_key': server_public_key,
+                    'client_key_hash': '',  # Add hash if needed
+                    'server_key_hash': '',  # Add hash if needed
+                }
+                
+            except Exception as e:
+                logger.error(f"Encryption session creation failed: {e}")
+                session_result = {
+                    'success': False,
+                    'error': str(e)
+                }
             
             if not session_result['success']:
                 log_audit_event(
@@ -233,7 +250,7 @@ class GPSEncryptionView(APIView):
             try:
                 gps_session = GPSEncryptionSession.objects.get(
                     session_id=session_id,
-                    ride__user=request.user,
+                    ride__rider=request.user,  # Fixed: user -> rider
                     is_active=True
                 )
             except GPSEncryptionSession.DoesNotExist:
@@ -255,23 +272,43 @@ class GPSEncryptionView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Prepare GPS data
-            gps_data = {
-                'latitude': serializer.validated_data['latitude'],
-                'longitude': serializer.validated_data['longitude'],
-                'timestamp': serializer.validated_data['timestamp'],
-                'speed': serializer.validated_data.get('speed'),
-                'bearing': serializer.validated_data.get('bearing'),
-                'altitude': serializer.validated_data.get('altitude'),
-                'accuracy': serializer.validated_data.get('accuracy')
-            }
+            # Prepare GPS coordinates
+            from core.encryption import GPSCoordinates, get_encryption_manager
+            
+            coordinates = GPSCoordinates(
+                latitude=serializer.validated_data['latitude'],
+                longitude=serializer.validated_data['longitude'],
+                altitude=serializer.validated_data.get('altitude'),
+                accuracy=serializer.validated_data.get('accuracy'),
+                speed=serializer.validated_data.get('speed'),
+                bearing=serializer.validated_data.get('bearing'),
+                timestamp=serializer.validated_data['timestamp']
+            )
             
             # Encrypt GPS data
-            encryption_manager = GPSEncryptionManager()
-            encryption_result = encryption_manager.encrypt_gps_data(
-                session_id=session_id,
-                gps_data=gps_data
-            )
+            encryption_manager = get_encryption_manager()
+            try:
+                encrypted_location = encryption_manager.encrypt_coordinates(
+                    session_id=session_id,
+                    coordinates=coordinates
+                )
+                
+                if not encrypted_location:
+                    raise Exception("Encryption failed - no result returned")
+                    
+                encryption_result = {
+                    'success': True,
+                    'encrypted_data': encrypted_location.encrypted_data,
+                    'nonce': encrypted_location.nonce,
+                    'timestamp': encrypted_location.timestamp
+                }
+                
+            except Exception as e:
+                logger.error(f"GPS encryption failed: {e}")
+                encryption_result = {
+                    'success': False,
+                    'error': str(e)
+                }
             
             if not encryption_result['success']:
                 log_audit_event(
@@ -294,22 +331,16 @@ class GPSEncryptionView(APIView):
                     user=request.user,
                     encrypted_data=encryption_result['encrypted_data'],
                     nonce=encryption_result['nonce'],
-                    timestamp=gps_data['timestamp'],
+                    timestamp=coordinates.timestamp,
                     source_device=request.META.get('HTTP_USER_AGENT', 'unknown'),
-                    encrypted_speed=encryption_result.get('encrypted_speed', ''),
-                    encrypted_bearing=encryption_result.get(
-                        'encrypted_bearing', ''
-                    ),
-                    encrypted_altitude=encryption_result.get(
-                        'encrypted_altitude', ''
-                    ),
-                    encrypted_accuracy=encryption_result.get(
-                        'encrypted_accuracy', ''
-                    ),
-                    checksum=encryption_result.get('checksum', '')
+                    encrypted_speed='',  # All data is in encrypted_data
+                    encrypted_bearing='',
+                    encrypted_altitude='',
+                    encrypted_accuracy='',
+                    data_size=len(encryption_result['encrypted_data'])
                 )
                 
-                # Update session stats
+                # Update session statistics
                 gps_session.encryption_count += 1
                 gps_session.save()
             
@@ -398,15 +429,18 @@ class GPSDecryptionView(APIView):
                         status='pending'
                     )
                     
-                    # Decrypt data
-                    decryption_result = encryption_manager.decrypt_gps_data(
-                        session_id=encrypted_gps.session.session_id,
+                    # Decrypt data using EncryptedLocation object
+                    encrypted_location = EncryptedLocation(
                         encrypted_data=encrypted_gps.encrypted_data,
-                        nonce=encrypted_gps.nonce
+                        nonce=encrypted_gps.nonce,
+                        timestamp=encrypted_gps.timestamp.isoformat(),
+                        session_id=encrypted_gps.session.session_id,
+                        ride_id=str(encrypted_gps.ride_id) if encrypted_gps.ride_id else ''
                     )
                     
-                    if decryption_result['success']:
-                        gps_coords = decryption_result['gps_data']
+                    gps_coords = encryption_manager.decrypt_coordinates(encrypted_location)
+                    
+                    if gps_coords:
                         
                         decrypted_data.append({
                             'data_id': encrypted_gps.id,
@@ -424,8 +458,7 @@ class GPSDecryptionView(APIView):
                         
                         # Update log
                         decryption_log.status = 'success'
-                        decryption_log.decryption_time_ms = \
-                            decryption_result.get('decryption_time_ms', 0)
+                        decryption_log.decryption_time_ms = 0  # No timing info available
                         decryption_log.save()
                         
                         # Update session stats
@@ -446,13 +479,13 @@ class GPSDecryptionView(APIView):
                         
                         # Update log
                         decryption_log.status = 'failed'
-                        decryption_log.error_message = decryption_result['error']
+                        decryption_log.error_message = 'Decryption failed'
                         decryption_log.save()
                         
                         # Log audit event
                         log_audit_event(
                             'decryption_failed', 'error',
-                            f'GPS decryption failed: {decryption_result["error"]}',
+                            f'GPS decryption failed for data {encrypted_gps.id}',
                             session=encrypted_gps.session,
                             user=request.user,
                             request=request,
@@ -499,7 +532,7 @@ def get_session_status(request, session_id):
     try:
         gps_session = GPSEncryptionSession.objects.get(
             session_id=session_id,
-            ride__user=request.user
+            ride__rider=request.user  # Fixed: user -> rider
         )
         
         time_remaining = 0

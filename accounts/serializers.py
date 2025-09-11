@@ -149,11 +149,15 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
     
     def _check_mfa_requirements(self, user, device_fingerprint):
         """Check if MFA is required for this login"""
-        # Premium and VIP users always require MFA
-        if user.tier in ['vip_premium', 'vip']:
+        # Primary check: Use user's MFA requirements (set by VIP card activation)
+        if user.mfa_required:
+            # If MFA is required but not set up, user must complete setup first
+            if not user.mfa_setup_completed:
+                return True
+            # If MFA is set up, require verification
             return True
         
-        # Check tier-specific MFA settings
+        # Fallback: Check tier-specific MFA settings for backward compatibility
         tier_config = USER_TIER_SETTINGS.get(user.tier, {})
         if tier_config.get('require_mfa', False):
             return True
@@ -196,11 +200,28 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
             return simple_token
     
     def _get_available_mfa_methods(self, user):
-        """Get available MFA methods for user"""
+        """Get available MFA methods for user based on tier and active tokens"""
         methods = []
-        # This would check user's MFA tokens
-        # For now, return common methods
-        methods.extend(['totp', 'sms', 'email'])
+        
+        # Get user's active MFA tokens
+        active_tokens = user.mfa_tokens.filter(is_active=True)
+        
+        # VIP and VIP Premium users get all methods
+        if user.tier in ['vip', 'vip_premium']:
+            # Show all available methods for VIP users
+            available_methods = ['totp', 'sms', 'email', 'backup']
+            for method in available_methods:
+                if active_tokens.filter(token_type=method).exists():
+                    methods.append(method)
+            
+            # If no methods set up but user needs MFA, show setup options
+            if not methods and user.mfa_required:
+                methods = ['totp']  # Default to TOTP for setup
+        else:
+            # Regular users only get email MFA
+            if active_tokens.filter(token_type='email').exists():
+                methods.append('email')
+        
         return methods
     
     def _verify_mfa_token(self, user, token):

@@ -108,7 +108,7 @@ class IsPremiumOrVIPUser(permissions.BasePermission):
                 tier = request.user.tier
             else:
                 tier = 'normal'
-            return tier in ['premium', 'vip']
+            return tier in ['vip_premium', 'vip']  # Updated to use correct tier values
         except AttributeError:
             return False
 

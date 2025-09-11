@@ -37,7 +37,7 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 # export DEBUG=True (Linux/Mac) or set DEBUG=True (Windows)
 # This will disable SSL redirects and secure cookies for local development
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'testserver']
 
 
 # Application definition
@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'marketing',
     
     # Custom apps
+    'core',  # GPS encryption core module
     'gps_tracking',
     'accounts',
     'rides',

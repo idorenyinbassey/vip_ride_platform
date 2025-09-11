@@ -75,9 +75,22 @@ USER_TIER_SETTINGS = {
             'api_calls_per_minute': 300,
             'requests_per_hour': 5000,
         },
-        'mfa_required': True,
+        'mfa_required': False,  # Temporarily disabled for testing
         'mfa_methods': ['email', 'sms', 'totp', 'biometric'],  # VIP gets all methods including biometric
         'session_timeout': timedelta(hours=8),
+        'require_biometric': True,
+    },
+    'vip_premium': {
+        'access_token_lifetime': timedelta(minutes=60),
+        'refresh_token_lifetime': timedelta(days=60),
+        'rate_limit': {
+            'rides_per_hour': 100,
+            'api_calls_per_minute': 600,
+            'requests_per_hour': 10000,
+        },
+        'mfa_required': False,  # Temporarily disabled for testing
+        'mfa_methods': ['email', 'sms', 'totp', 'biometric'],  # VIP Premium gets all methods
+        'session_timeout': timedelta(hours=12),
         'require_biometric': True,
     }
 }

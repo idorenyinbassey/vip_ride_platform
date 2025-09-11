@@ -68,20 +68,175 @@ This is a VIP ride-hailing platform with Django 5.2.5 backend and React Native 0
   "backend": {
     "framework": "Django",
     "auth": "JWT authentication",
+    "base_url": "https://your-domain.com",
     "api_endpoints": {
-      "login": "/api/auth/login/",
-      "signup": "/api/auth/signup/",
-      "profile": "/api/users/profile/",
-      "rides": "/api/rides/",
-      "vehicles": "/api/vehicles/",
-      "fleet": "/api/fleet/",
-      "fleet_drivers": "/api/fleet/drivers/",
-      "lease": "/api/lease/",
-      "earnings": "/api/drivers/earnings/",
-      "hotels": "/api/hotels/",
-      "hotel_bookings": "/api/hotels/bookings/",
-      "payments": "/api/payments/",
-      "sos": "/api/security/sos/"
+      "authentication": {
+        "login": "/api/v1/accounts/login/",
+        "register": "/api/v1/accounts/register/",
+        "refresh_token": "/api/v1/accounts/refresh/",
+        "logout": "/api/v1/accounts/logout/",
+        "password_change": "/api/v1/accounts/password/change/"
+      },
+      "mfa": {
+        "setup": "/api/v1/accounts/auth/mfa/setup/",
+        "verify": "/api/v1/accounts/auth/mfa/verify/",
+        "confirm": "/api/v1/accounts/auth/mfa/confirm/",
+        "status": "/api/v1/accounts/auth/mfa/status/"
+      },
+      "user_management": {
+        "profile": "/api/v1/accounts/profile/",
+        "tier_level": "/api/v1/accounts/tier/level/",
+        "tier_benefits": "/api/v1/accounts/tier/benefits/",
+        "security_status": "/api/v1/accounts/security/status/",
+        "device_management": "/api/v1/accounts/devices/"
+      },
+      "vip_cards": {
+        "generate": "/api/v1/accounts/cards/generate/",
+        "activate": "/api/v1/accounts/cards/activate/",
+        "user_cards": "/api/v1/accounts/cards/user/",
+        "card_details": "/api/v1/accounts/cards/details/{serial_number}/",
+        "activation_history": "/api/v1/accounts/cards/history/"
+      },
+      "premium_cards": {
+        "list": "/api/v1/accounts/premium-cards/",
+        "purchase": "/api/v1/accounts/premium-cards/purchase/",
+        "activate": "/api/v1/accounts/premium-cards/activate/",
+        "payment_intent": "/api/v1/accounts/premium-cards/payment-intent/",
+        "premium_status": "/api/v1/accounts/premium-status/"
+      },
+      "rides": {
+        "request_ride": "/api/v1/rides/workflow/request/",
+        "active_rides": "/api/v1/rides/workflow/active/",
+        "ride_status": "/api/v1/rides/workflow/{ride_id}/status/",
+        "accept_ride": "/api/v1/rides/workflow/{ride_id}/accept/",
+        "complete_ride": "/api/v1/rides/workflow/{ride_id}/complete/",
+        "cancel_ride": "/api/v1/rides/workflow/{ride_id}/cancel/",
+        "ride_history": "/api/v1/rides/workflow/{ride_id}/history/",
+        "trigger_sos": "/api/v1/rides/workflow/{ride_id}/sos/"
+      },
+      "ride_matching": {
+        "request_ride": "/api/v1/rides/matching/matching/request_ride/",
+        "driver_response": "/api/v1/rides/matching/matching/driver_response/",
+        "driver_status": "/api/v1/rides/matching/matching/driver_status/",
+        "active_offers": "/api/v1/rides/matching/matching/active_offers/",
+        "surge_zones": "/api/v1/rides/matching/matching/surge_zones/",
+        "matching_stats": "/api/v1/rides/matching/matching/matching_stats/"
+      },
+      "gps_tracking": {
+        "locations": "/api/v1/gps/locations/",
+        "location_detail": "/api/v1/gps/locations/{id}/",
+        "encrypt_gps": "/api/v1/gps/encrypt/",
+        "decrypt_gps": "/api/v1/gps/decrypt/",
+        "key_exchange": "/api/v1/gps/key-exchange/",
+        "session_status": "/api/v1/gps/sessions/{session_id}/status/",
+        "terminate_session": "/api/v1/gps/sessions/terminate/",
+        "encryption_stats": "/api/v1/gps/stats/"
+      },
+      "fleet_management": {
+        "companies": "/api/v1/fleet/api/companies/",
+        "company_detail": "/api/v1/fleet/api/companies/{id}/",
+        "company_vehicles": "/api/v1/fleet/api/companies/{id}/vehicles/",
+        "company_analytics": "/api/v1/fleet/api/companies/{id}/analytics/",
+        "verify_company": "/api/v1/fleet/api/companies/{id}/verify_company/",
+        "vehicles": "/api/v1/fleet/api/vehicles/",
+        "vehicle_detail": "/api/v1/fleet/api/vehicles/{id}/",
+        "my_vehicles": "/api/v1/fleet/api/vehicles/my_vehicles/",
+        "available_vehicles": "/api/v1/fleet/api/vehicles/available_vehicles/",
+        "assign_driver": "/api/v1/fleet/api/vehicles/{id}/assign_driver/",
+        "add_maintenance": "/api/v1/fleet/api/vehicles/{id}/add_maintenance/"
+      },
+      "hotel_partnerships": {
+        "hotels": "/api/v1/hotel-partnerships/hotels/",
+        "hotel_detail": "/api/v1/hotel-partnerships/hotels/{id}/",
+        "nearby_hotels": "/api/v1/hotel-partnerships/hotels/nearby/",
+        "popular_hotels": "/api/v1/hotel-partnerships/hotels/popular/",
+        "search_hotels": "/api/v1/hotel-partnerships/hotels/search/",
+        "bookings": "/api/v1/hotel-partnerships/bookings/",
+        "booking_detail": "/api/v1/hotel-partnerships/bookings/{id}/",
+        "cancel_booking": "/api/v1/hotel-partnerships/bookings/{id}/cancel/"
+      },
+      "hotel_admin": {
+        "admin_hotels": "/api/v1/hotel-partnerships/admin/hotels/",
+        "admin_bookings": "/api/v1/hotel-partnerships/admin/bookings/",
+        "bulk_events": "/api/v1/hotel-partnerships/admin/bulk-events/",
+        "commission_reports": "/api/v1/hotel-partnerships/admin/commission-reports/",
+        "hotel_guests": "/api/v1/hotel-partnerships/admin/guests/",
+        "hotel_rooms": "/api/v1/hotel-partnerships/admin/rooms/",
+        "hotel_staff": "/api/v1/hotel-partnerships/admin/staff/",
+        "pms_logs": "/api/v1/hotel-partnerships/admin/pms-logs/"
+      },
+      "vehicle_leasing": {
+        "vehicles": "/api/v1/leasing/vehicles/",
+        "vehicle_detail": "/api/v1/leasing/vehicles/{id}/",
+        "search_vehicles": "/api/v1/leasing/search/",
+        "leases": "/api/v1/leasing/leases/",
+        "lease_detail": "/api/v1/leasing/leases/{id}/",
+        "approve_lease": "/api/v1/leasing/leases/{id}/approve/",
+        "terminate_lease": "/api/v1/leasing/leases/{id}/terminate/",
+        "revenue_report": "/api/v1/leasing/leases/{id}/revenue_report/",
+        "calculate_lease": "/api/v1/leasing/calculate-lease/",
+        "owner_dashboard": "/api/v1/leasing/owner-dashboard/",
+        "fleet_dashboard": "/api/v1/leasing/fleet-dashboard/",
+        "payments": "/api/v1/leasing/payments/",
+        "mark_payment_paid": "/api/v1/leasing/payments/{id}/mark_paid/"
+      },
+      "payments": {
+        "payments": "/api/v1/payments/payments/",
+        "payment_detail": "/api/v1/payments/payments/{id}/",
+        "create_ride_payment": "/api/v1/payments/payments/create_ride_payment/",
+        "verify_payment": "/api/v1/payments/payments/{id}/verify/",
+        "refund_payment": "/api/v1/payments/payments/{id}/refund/",
+        "payment_methods": "/api/v1/payments/payment-methods/",
+        "payment_history": "/api/v1/payments/payment-history/",
+        "driver_payouts": "/api/v1/payments/driver-payouts/",
+        "earnings_summary": "/api/v1/payments/driver-payouts/earnings_summary/",
+        "commission_reports": "/api/v1/payments/commission-reports/",
+        "gateway_status": "/api/v1/payments/gateway-status/",
+        "disputes": "/api/v1/payments/disputes/",
+        "resolve_dispute": "/api/v1/payments/disputes/{id}/resolve/",
+        "currencies": "/api/v1/payments/currencies/",
+        "exchange_rates": "/api/v1/payments/currencies/exchange_rates/"
+      },
+      "pricing": {
+        "price_quote": "/api/v1/pricing/quote/",
+        "pricing_zones": "/api/v1/pricing/zones/",
+        "surge_levels": "/api/v1/pricing/surge-levels/",
+        "price_transparency": "/api/v1/pricing/transparency/",
+        "validate_promo": "/api/v1/pricing/validate-promo/",
+        "update_all_surge": "/api/v1/pricing/admin/update-all-surge/",
+        "update_zone_surge": "/api/v1/pricing/admin/zones/{zone_id}/update-surge/"
+      },
+      "notifications": {
+        "notifications": "/api/v1/notifications/notifications/",
+        "notification_detail": "/api/v1/notifications/notifications/{id}/",
+        "mark_read": "/api/v1/notifications/notifications/{id}/mark_read/",
+        "unread_notifications": "/api/v1/notifications/notifications/unread/",
+        "mark_all_read": "/api/v1/notifications/mark-all-read/",
+        "unread_count": "/api/v1/notifications/unread-count/",
+        "send_notification": "/api/v1/notifications/send/",
+        "send_bulk": "/api/v1/notifications/send-bulk/",
+        "preferences": "/api/v1/notifications/preferences/",
+        "templates": "/api/v1/notifications/templates/",
+        "delivery_status": "/api/v1/notifications/delivery-status/"
+      },
+      "control_center": {
+        "dashboard": "/api/v1/control-center/api/dashboard/",
+        "incidents": "/api/v1/control-center/api/incidents/",
+        "incident_detail": "/api/v1/control-center/api/incidents/{id}/",
+        "update_incident_status": "/api/v1/control-center/api/incidents/{id}/update_status/",
+        "active_incidents": "/api/v1/control-center/api/incidents/active_incidents/",
+        "critical_incidents": "/api/v1/control-center/api/incidents/critical_incidents/",
+        "trigger_sos": "/api/v1/control-center/api/sos/trigger/",
+        "vip_sessions": "/api/v1/control-center/api/vip-sessions/",
+        "vip_session_detail": "/api/v1/control-center/api/vip-sessions/{id}/",
+        "vip_check_in": "/api/v1/control-center/api/vip-sessions/{id}/check_in/",
+        "update_vip_location": "/api/v1/control-center/api/vip-sessions/{id}/update_location/"
+      },
+      "webhooks": {
+        "stripe_webhook": "/api/v1/payments/webhooks/stripe/",
+        "flutterwave_webhook": "/api/v1/payments/webhooks/flutterwave/",
+        "paystack_webhook": "/api/v1/payments/webhooks/paystack/"
+      }
     }
   },
   "roles": {

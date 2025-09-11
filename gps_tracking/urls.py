@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'gps_tracking'
@@ -17,4 +17,7 @@ urlpatterns = [
     path('routes/<uuid:pk>/', 
          views.RouteOptimizationDetailView.as_view(), 
          name='route-optimization-detail'),
+    
+    # GPS Encryption URLs (from core app)
+    path('', include('core.gps_urls')),
 ]

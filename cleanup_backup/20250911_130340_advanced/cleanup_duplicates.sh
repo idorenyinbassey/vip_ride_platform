@@ -15,16 +15,28 @@ echo "Removing empty file: consolidate_hotels_simple.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/consolidate_hotels_simple.py"
 echo "Removing empty file: verify_consolidation.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/verify_consolidation.py"
+echo "Removing empty file: check_users.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/check_users.py"
+echo "Removing empty file: test_mfa_integration.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_mfa_integration.py"
+echo "Removing empty file: test_tier_system.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_tier_system.py"
+echo "Removing empty file: test_totp_implementation.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_totp_implementation.py"
+echo "Removing empty file: test_mfa_workflow.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/test_mfa_workflow.py"
+echo "Removing empty file: totp_implementation_summary.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/totp_implementation_summary.py"
 echo "Removing empty file: accounts/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/accounts/__init__.py"
-echo "Removing empty file: accounts/payment_service_new.py"
-rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/accounts/payment_service_new.py"
 echo "Removing empty file: control_center/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/control_center/__init__.py"
 echo "Removing empty file: fleet_management/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/fleet_management/__init__.py"
 echo "Removing empty file: gps_tracking/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/gps_tracking/__init__.py"
+echo "Removing empty file: gps_tracking/encryption.py"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/gps_tracking/encryption.py"
 echo "Removing empty file: hotel_partnerships/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/hotel_partnerships/__init__.py"
 echo "Removing empty file: notifications/__init__.py"
@@ -563,8 +575,8 @@ echo "Removing empty file: hotel_partnerships/management/commands/__init__.py"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/hotel_partnerships/management/commands/__init__.py"
 echo "Removing empty file: mobile/lib/services/premium_card_service_clean.dart"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/services/premium_card_service_clean.dart"
-echo "Removing empty file: mobile/lib/screens/shared/premium_card_payment_screen.dart"
-rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/shared/premium_card_payment_screen.dart"
+echo "Removing empty file: mobile/lib/screens/client/vip/vip_client_app_clean.dart"
+rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/mobile/lib/screens/client/vip/vip_client_app_clean.dart"
 echo "Removing empty file: TEST_CLEANUP_SUMMARY.md"
 rm -f "/home/idorenyinbassey/My projects/workspace1/vip_ride_platform/TEST_CLEANUP_SUMMARY.md"
 
@@ -743,30 +755,27 @@ echo ''
 echo 'Duplicate group 40:'
 echo "  - mobile/.dart_tool/dartpad/web_plugin_registrant.dart"
 echo "  - mobile/.dart_tool/flutter_build/0fab30234888e39fb70f8b7bfa60da44/web_plugin_registrant.dart"
+echo "  - mobile/.dart_tool/flutter_build/4ff4128b5a37cbacbf9ced8944be6a62/web_plugin_registrant.dart"
 echo ''
 echo 'Duplicate group 41:'
-echo "  - mobile/lib/screens/client/regular/regular_client_app.dart"
-echo "  - mobile/lib/screens/client/regular/regular_client_app_clean.dart"
+echo "  - mobile/.dart_tool/flutter_build/0fab30234888e39fb70f8b7bfa60da44/main.dart"
+echo "  - mobile/.dart_tool/flutter_build/4ff4128b5a37cbacbf9ced8944be6a62/main.dart"
 echo ''
 echo 'Duplicate group 42:'
-echo "  - mobile/lib/screens/client/vip/vip_client_app.dart"
-echo "  - mobile/lib/screens/client/vip/vip_client_app_clean.dart"
-echo ''
-echo 'Duplicate group 43:'
 echo "  - .venv/lib/python3.13/site-packages/rest_framework/static/rest_framework/js/jquery-3.7.1.min.js"
 echo "  - .venv/lib/python3.13/site-packages/django/contrib/admin/static/admin/js/vendor/jquery/jquery.min.js"
 echo ''
-echo 'Duplicate group 44:'
+echo 'Duplicate group 43:'
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2014-10-01/resources-1.json"
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2015-03-01/resources-1.json"
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2015-04-15/resources-1.json"
 echo ''
-echo 'Duplicate group 45:'
+echo 'Duplicate group 44:'
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2015-10-01/resources-1.json"
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2016-04-01/resources-1.json"
 echo "  - .venv/lib/python3.13/site-packages/boto3/data/ec2/2016-09-15/resources-1.json"
 echo ''
-echo 'Duplicate group 46:'
+echo 'Duplicate group 45:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/xray/2016-04-12/examples-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/workspaces-web/2020-07-08/examples-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/workspaces/2015-04-08/examples-1.json"
@@ -1005,7 +1014,7 @@ echo "  - .venv/lib/python3.13/site-packages/botocore/data/acm/2015-12-08/exampl
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/account/2021-02-01/examples-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/accessanalyzer/2019-11-01/examples-1.json"
 echo ''
-echo 'Duplicate group 47:'
+echo 'Duplicate group 46:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/workspaces-web/2020-07-08/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/workspaces-instances/2022-07-26/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/verifiedpermissions/2021-12-01/waiters-2.json"
@@ -1067,7 +1076,7 @@ echo "  - .venv/lib/python3.13/site-packages/botocore/data/appfabric/2023-05-19/
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/amplifyuibuilder/2021-08-11/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/aiops/2018-05-10/waiters-2.json"
 echo ''
-echo 'Duplicate group 48:'
+echo 'Duplicate group 47:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/workmailmessageflow/2019-05-01/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/wellarchitected/2020-03-31/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/wafv2/2019-07-29/paginators-1.json"
@@ -1156,39 +1165,39 @@ echo "  - .venv/lib/python3.13/site-packages/botocore/data/appflow/2020-08-23/pa
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/appconfigdata/2021-11-11/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/apigatewaymanagementapi/2018-11-29/paginators-1.json"
 echo ''
-echo 'Duplicate group 49:'
+echo 'Duplicate group 48:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/waf-regional/2016-11-28/examples-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/waf/2015-08-24/examples-1.json"
 echo ''
-echo 'Duplicate group 50:'
+echo 'Duplicate group 49:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/neptune/2014-10-31/service-2.sdk-extras.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/docdb/2014-10-31/service-2.sdk-extras.json"
 echo ''
-echo 'Duplicate group 51:'
+echo 'Duplicate group 50:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/neptune/2014-10-31/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/docdb/2014-10-31/waiters-2.json"
 echo ''
-echo 'Duplicate group 52:'
+echo 'Duplicate group 51:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/keyspaces/2022-02-10/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/eks-auth/2023-11-26/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/bedrock-runtime/2023-09-30/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/bedrock/2023-04-20/waiters-2.json"
 echo ''
-echo 'Duplicate group 53:'
+echo 'Duplicate group 52:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2014-10-01/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2015-03-01/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2015-04-15/paginators-1.json"
 echo ''
-echo 'Duplicate group 54:'
+echo 'Duplicate group 53:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2014-10-01/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2015-03-01/waiters-2.json"
 echo ''
-echo 'Duplicate group 55:'
+echo 'Duplicate group 54:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2015-10-01/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2016-04-01/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/ec2/2016-09-15/paginators-1.json"
 echo ''
-echo 'Duplicate group 56:'
+echo 'Duplicate group 55:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-05-31/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-10-21/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-11-06/paginators-1.json"
@@ -1208,7 +1217,7 @@ echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2018-06-18
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2018-11-05/paginators-1.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2019-03-26/paginators-1.json"
 echo ''
-echo 'Duplicate group 57:'
+echo 'Duplicate group 56:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-05-31/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-10-21/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2014-11-06/waiters-2.json"
@@ -1223,25 +1232,25 @@ echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2016-09-07
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2016-09-29/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2016-11-25/waiters-2.json"
 echo ''
-echo 'Duplicate group 58:'
+echo 'Duplicate group 57:'
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2017-03-25/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2017-10-30/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2018-06-18/waiters-2.json"
 echo "  - .venv/lib/python3.13/site-packages/botocore/data/cloudfront/2018-11-05/waiters-2.json"
 echo ''
-echo 'Duplicate group 59:'
+echo 'Duplicate group 58:'
 echo "  - .venv/lib/python3.13/site-packages/django/contrib/admin/static/admin/js/vendor/select2/LICENSE.md"
 echo "  - .venv/lib/python3.13/site-packages/django/contrib/admin/static/admin/css/vendor/select2/LICENSE-SELECT2.md"
 echo ''
-echo 'Duplicate group 60:'
+echo 'Duplicate group 59:'
 echo "  - .venv/lib/python3.13/site-packages/botocore-1.40.26.dist-info/LICENSE.txt"
 echo "  - .venv/lib/python3.13/site-packages/coverage-7.10.2.dist-info/licenses/LICENSE.txt"
 echo ''
-echo 'Duplicate group 61:'
+echo 'Duplicate group 60:'
 echo "  - .venv/lib/python3.13/site-packages/django/forms/templates/django/forms/errors/dict/text.txt"
 echo "  - .venv/lib/python3.13/site-packages/django/forms/jinja2/django/forms/errors/dict/text.txt"
 echo ''
-echo 'Duplicate group 62:'
+echo 'Duplicate group 61:'
 echo "  - .venv/lib/python3.13/site-packages/django/forms/templates/django/forms/errors/list/text.txt"
 echo "  - .venv/lib/python3.13/site-packages/django/forms/jinja2/django/forms/errors/list/text.txt"
 echo ''

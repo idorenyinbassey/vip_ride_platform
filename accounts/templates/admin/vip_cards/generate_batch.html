@@ -1,0 +1,120 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='accounts' %}">Accounts</a>
+    &rsaquo; <a href="{% url 'admin:accounts_vipdigitalcard_changelist' %}">VIP Digital Cards</a>
+    &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module aligned">
+    <h2>Generate VIP Card Batch</h2>
+
+    <div class="form-row">
+        <div class="field-box">
+            <h3>Instructions</h3>
+            <ul>
+                <li>Select the tier type (VIP or VIP Premium)</li>
+                <li>Enter the number of cards to generate (1-1000)</li>
+                <li>Add optional notes for record keeping</li>
+                <li>Cards will be generated with unique serial numbers and activation codes</li>
+                <li>Generated cards will be available for activation immediately</li>
+            </ul>
+        </div>
+    </div>
+
+    <form method="post" id="batch-generation-form">
+        {% csrf_token %}
+
+        <fieldset class="module aligned">
+            <h2>Batch Details</h2>
+
+            <div class="form-row">
+                <div>
+                    <label class="required" for="id_tier">Tier:</label>
+                    {{ form.tier }}
+                    {% if form.tier.help_text %}
+                    <p class="help">{{ form.tier.help_text }}</p>
+                    {% endif %}
+                    {{ form.tier.errors }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label class="required" for="id_quantity">Quantity:</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.help_text %}
+                    <p class="help">{{ form.quantity.help_text }}</p>
+                    {% endif %}
+                    {{ form.quantity.errors }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="id_notes">Notes:</label>
+                    {{ form.notes }}
+                    {% if form.notes.help_text %}
+                    <p class="help">{{ form.notes.help_text }}</p>
+                    {% endif %}
+                    {{ form.notes.errors }}
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="submit-row">
+            <input type="submit" value="Generate Cards" class="default" id="generate-btn">
+            <p class="deletelink-box">
+                <a href="{% url 'admin:accounts_vipdigitalcard_changelist' %}" class="deletelink">Cancel</a>
+            </p>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('batch-generation-form').addEventListener('submit', function (e) {
+        const btn = document.getElementById('generate-btn');
+        const quantity = document.getElementById('id_quantity').value;
+
+        if (quantity > 100) {
+            if (!confirm(`You are about to generate ${quantity} cards. This may take a while. Continue?`)) {
+                e.preventDefault();
+                return;
+            }
+        }
+
+        btn.value = 'Generating...';
+        btn.disabled = true;
+    });
+</script>
+
+<style>
+    .field-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .field-box h3 {
+        margin-top: 0;
+        color: #495057;
+    }
+
+    .field-box ul {
+        margin-bottom: 0;
+    }
+
+    .field-box li {
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}

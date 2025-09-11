@@ -113,6 +113,12 @@ class User(AbstractUser):
     is_suspended = models.BooleanField(default=False)
     suspension_reason = models.TextField(blank=True)
     
+    # MFA (Multi-Factor Authentication) Settings
+    mfa_enabled = models.BooleanField(default=False, help_text="Whether MFA is enabled for this user")
+    mfa_required = models.BooleanField(default=False, help_text="Whether MFA is required (set automatically for VIP/Premium)")
+    mfa_setup_completed = models.BooleanField(default=False, help_text="Whether user has completed MFA setup")
+    mfa_setup_date = models.DateTimeField(null=True, blank=True, help_text="When MFA was first set up")
+    
     # NDPR Compliance Fields
     data_processing_consent = models.BooleanField(default=False)
     data_processing_consent_date = models.DateTimeField(null=True, blank=True)
@@ -162,6 +168,37 @@ class User(AbstractUser):
     def full_name(self):
         return f'{self.first_name} {self.last_name}'.strip()
     
+    def enable_mfa_for_tier(self, save=True):
+        """
+        Automatically enable MFA requirement based on user tier.
+        Called when user is upgraded to VIP or VIP Premium.
+        """
+        if self.tier in [UserTier.VIP, UserTier.VIP_PREMIUM]:
+            self.mfa_required = True
+            if not self.mfa_enabled:
+                self.mfa_enabled = True
+            if save:
+                self.save(update_fields=['mfa_required', 'mfa_enabled'])
+    
+    def setup_mfa_completed(self, save=True):
+        """Mark MFA setup as completed"""
+        from django.utils import timezone
+        self.mfa_setup_completed = True
+        if not self.mfa_setup_date:
+            self.mfa_setup_date = timezone.now()
+        if save:
+            self.save(update_fields=['mfa_setup_completed', 'mfa_setup_date'])
+    
+    @property
+    def needs_mfa_setup(self):
+        """Check if user needs to complete MFA setup"""
+        return self.mfa_required and not self.mfa_setup_completed
+    
+    @property
+    def has_active_mfa_methods(self):
+        """Check if user has any active MFA methods configured"""
+        return self.mfa_tokens.filter(is_active=True).exists()
+
     def can_access_tier(self, required_tier):
         """Check if user can access a specific tier service"""
         tier_hierarchy = {
