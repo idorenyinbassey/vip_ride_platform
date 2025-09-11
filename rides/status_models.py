@@ -11,7 +11,8 @@ from django.utils import timezone
 
 
 class RideStatusHistory(models.Model):
-    """Track all ride status changes for audit and analytics"""
+    """Track all ri    # Context
+    user_tier = models.CharField(max_length=15) status changes for audit and analytics"""
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
@@ -199,7 +200,7 @@ class CancellationRecord(models.Model):
     )
     
     # Policy information
-    user_tier = models.CharField(max_length=10)
+    user_tier = models.CharField(max_length=15)
     free_cancellation_window_minutes = models.IntegerField()
     time_since_request_minutes = models.IntegerField()
     

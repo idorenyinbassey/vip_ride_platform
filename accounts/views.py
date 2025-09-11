@@ -352,14 +352,41 @@ class MFACommunicationView(APIView):
         user = request.user
         
         # Get available MFA methods based on tier
+        from .rbac_settings import USER_TIER_SETTINGS
         tier_config = USER_TIER_SETTINGS.get(user.tier, {})
         available_methods = tier_config.get('mfa_methods', ['totp', 'email'])
         
+        # Get active MFA methods from database
+        from .models import MFAToken
+        
+        active_methods = []
+        mfa_tokens = MFAToken.objects.filter(user=user, is_active=True)
+        
+        for token in mfa_tokens:
+            method_info = {
+                'type': token.token_type,
+                'is_primary': token.is_primary,
+                'created_at': token.created_at,
+                'last_used_at': token.last_used_at
+            }
+            
+            # Add method-specific info
+            if token.token_type == 'sms':
+                method_info['phone_number'] = token.phone_number
+            elif token.token_type == 'email':
+                method_info['email_address'] = token.email_address
+            elif token.token_type == 'backup':
+                method_info['codes_remaining'] = len(token.backup_codes)
+            
+            active_methods.append(method_info)
+        
+        mfa_enabled = len(active_methods) > 0
+        
         return Response({
-            'mfa_enabled': getattr(user, 'mfa_enabled', False),
+            'mfa_enabled': mfa_enabled,
             'available_methods': available_methods,
             'required': tier_config.get('require_mfa', False),
-            'active_methods': []  # Would get from MFAToken model
+            'active_methods': active_methods
         })
     
     def post(self, request):
@@ -371,9 +398,32 @@ class MFACommunicationView(APIView):
                 method = serializer.validated_data['method']
                 
                 if method == 'totp':
-                    # Generate TOTP secret and QR code
+                    # Check if user already has TOTP setup
+                    from .models import MFAToken
+                    
+                    existing_totp = MFAToken.objects.filter(
+                        user=request.user,
+                        token_type='totp',
+                        is_active=True
+                    ).first()
+                    
+                    if existing_totp:
+                        return Response({
+                            'error': _('TOTP is already configured for this user.')
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Generate TOTP secret and save as inactive until confirmed
                     import pyotp
                     secret = pyotp.random_base32()
+                    
+                    # Create MFA token (inactive until confirmed)
+                    mfa_token = MFAToken.objects.create(
+                        user=request.user,
+                        token_type='totp',
+                        secret_key=secret,
+                        is_active=False  # Will be activated after confirmation
+                    )
+                    
                     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
                         name=request.user.email,
                         issuer_name="VIP Ride Platform"
@@ -383,10 +433,26 @@ class MFACommunicationView(APIView):
                         'method': method,
                         'secret': secret,
                         'qr_uri': totp_uri,
-                        'message': _('TOTP setup initiated. Scan QR code.')
+                        'token_id': str(mfa_token.id),
+                        'message': _('TOTP setup initiated. Scan QR code and confirm with a token.')
                     })
                 
                 elif method == 'backup':
+                    # Generate backup codes and save them
+                    from .models import MFAToken
+                    
+                    # Check if user already has backup codes
+                    existing_backup = MFAToken.objects.filter(
+                        user=request.user,
+                        token_type='backup',
+                        is_active=True
+                    ).first()
+                    
+                    if existing_backup:
+                        return Response({
+                            'error': _('Backup codes already exist. Delete existing codes first.')
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
                     # Generate backup codes
                     import secrets
                     codes = []
@@ -394,10 +460,40 @@ class MFACommunicationView(APIView):
                         code = secrets.token_hex(4).upper()
                         codes.append(code)
                     
+                    # Save backup codes
+                    MFAToken.objects.create(
+                        user=request.user,
+                        token_type='backup',
+                        backup_codes=codes,
+                        is_active=True
+                    )
+                    
                     return Response({
                         'method': method,
                         'backup_codes': codes,
                         'message': _('Backup codes generated. Store securely.')
+                    })
+                
+                elif method in ['sms', 'email']:
+                    # For SMS/Email, create MFA token with contact info
+                    from .models import MFAToken
+                    
+                    contact_info = {}
+                    if method == 'sms':
+                        contact_info['phone_number'] = serializer.validated_data['phone_number']
+                    elif method == 'email':
+                        contact_info['email_address'] = serializer.validated_data['email_address']
+                    
+                    MFAToken.objects.create(
+                        user=request.user,
+                        token_type=method,
+                        is_active=True,
+                        **contact_info
+                    )
+                    
+                    return Response({
+                        'method': method,
+                        'message': _(f'{method.upper()} MFA setup completed.')
                     })
                 
                 return Response({
@@ -427,18 +523,96 @@ class MFACommunicationView(APIView):
             )
         
         try:
-            # Remove MFA method (would delete from MFAToken model)
-            logger.info(f"MFA method {method} disabled for user: {request.user.email}")
+            from .models import MFAToken
             
-            return Response({
-                'message': _('MFA method disabled successfully.')
-            })
+            # Find and delete the MFA token
+            deleted_count = MFAToken.objects.filter(
+                user=request.user,
+                token_type=method,
+                is_active=True
+            ).delete()[0]
+            
+            if deleted_count > 0:
+                logger.info(f"MFA method {method} disabled for user: {request.user.email}")
+                return Response({
+                    'message': _('MFA method disabled successfully.')
+                })
+            else:
+                return Response(
+                    {'error': _('MFA method not found or already disabled.')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
             
         except Exception as e:
             logger.error(f"MFA disable error: {str(e)}")
             return Response(
                 {'error': _('Failed to disable MFA method.')},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class MFAConfirmationView(APIView):
+    """Confirm and activate MFA setup"""
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        """Confirm MFA setup with verification token"""
+        token_id = request.data.get('token_id')
+        verification_code = request.data.get('verification_code')
+        
+        if not token_id or not verification_code:
+            return Response(
+                {'error': _('Both token_id and verification_code are required.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from .models import MFAToken
+            
+            # Get the inactive MFA token
+            mfa_token = MFAToken.objects.get(
+                id=token_id,
+                user=request.user,
+                is_active=False
+            )
+            
+            # Verify the TOTP code
+            if mfa_token.token_type == 'totp':
+                if mfa_token.verify_totp(verification_code):
+                    # Activate the MFA token
+                    mfa_token.is_active = True
+                    mfa_token.failed_attempts = 0
+                    mfa_token.save()
+                    
+                    logger.info(f"TOTP MFA activated for user: {request.user.email}")
+                    
+                    return Response({
+                        'message': _('TOTP MFA has been successfully activated.'),
+                        'method': 'totp',
+                        'active': True
+                    })
+                else:
+                    return Response(
+                        {'error': _('Invalid verification code.')},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {'error': _('Invalid token type for confirmation.')},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except MFAToken.DoesNotExist:
+            return Response(
+                {'error': _('Invalid token ID or token already activated.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"MFA confirmation error: {str(e)}")
+            return Response(
+                {'error': _('MFA confirmation failed.')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 

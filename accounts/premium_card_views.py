@@ -30,25 +30,25 @@ class PremiumCardPurchaseView(APIView):
         user = request.user
         
         # Get request data
-        tier = request.data.get('tier', 'premium')
+        tier = request.data.get('tier', 'vip')
         payment_method = request.data.get('payment_method', 'stripe')
         payment_token = request.data.get('payment_token')
         payment_intent_id = request.data.get('payment_intent_id')
         
-        if tier not in ['premium', 'vip']:
+        if tier not in ['vip', 'vip_premium']:
             return Response(
-                {'error': _('Invalid tier. Must be "premium" or "vip".')},
+                {'error': _('Invalid tier. Must be "vip" or "vip_premium".')},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if payment_method not in ['stripe', 'google_pay', 'paypal']:
+        if payment_method not in ['stripe', 'google_pay', 'flutterwave', 'paystack']:
             return Response(
                 {'error': _('Invalid payment method.')},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Determine price
-        price = 149.99 if tier == 'vip' else 99.99
+        price = 149.99 if tier == 'vip_premium' else 99.99
         
         try:
             with transaction.atomic():
@@ -78,8 +78,13 @@ class PremiumCardPurchaseView(APIView):
                     owner=user,
                     purchased_at=timezone.now(),
                     price=price,
-                    validity_months=18 if tier == 'vip' else 12
+                    validity_months=18 if tier == 'vip_premium' else 12
                 )
+                
+                # Update user tier immediately after purchase
+                # This allows immediate access to premium features
+                user.tier = tier
+                user.save()
                 
                 # Create transaction record
                 card_transaction = PremiumCardTransaction.objects.create(
@@ -125,16 +130,16 @@ class PaymentIntentView(APIView):
         """Create Payment Intent for secure payment processing"""
         user = request.user
         
-        tier = request.data.get('tier', 'premium')
+        tier = request.data.get('tier', 'vip')
         
-        if tier not in ['premium', 'vip']:
+        if tier not in ['vip', 'vip_premium']:
             return Response(
-                {'error': _('Invalid tier. Must be "premium" or "vip".')},
+                {'error': _('Invalid tier. Must be "vip" or "vip_premium".')},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Determine price
-        price = 149.99 if tier == 'vip' else 99.99
+        # Determine price - vip_premium is the highest tier
+        price = 149.99 if tier == 'vip_premium' else 99.99
         
         try:
             payment_intent_data = PremiumCardPaymentService.create_stripe_payment_intent(

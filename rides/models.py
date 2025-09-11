@@ -93,7 +93,7 @@ class Ride(models.Model):
         default=RideType.NORMAL
     )
     rider_tier = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=UserTier.choices,
         default=UserTier.NORMAL
     )

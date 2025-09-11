@@ -26,8 +26,8 @@ class PremiumDigitalCard(models.Model):
     ]
     
     TIER_CHOICES = [
-        ('premium', 'Premium'),
         ('vip', 'VIP'),
+        ('vip_premium', 'VIP Premium'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -46,7 +46,7 @@ class PremiumDigitalCard(models.Model):
     )
     
     # Card Properties
-    tier = models.CharField(max_length=10, choices=TIER_CHOICES, default='premium')
+    tier = models.CharField(max_length=15, choices=TIER_CHOICES, default='vip')
     status = models.CharField(max_length=20, choices=CARD_STATUS_CHOICES, default='available')
     
     # Pricing and Validity

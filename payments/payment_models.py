@@ -269,7 +269,7 @@ class Payment(models.Model):
     net_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Amount after fees")
     
     # Commission calculation (tier-based)
-    user_tier = models.CharField(max_length=10, choices=UserTier.choices)
+    user_tier = models.CharField(max_length=15, choices=UserTier.choices)
     commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('15.0'))
     commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     driver_payout_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))

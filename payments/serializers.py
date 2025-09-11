@@ -223,7 +223,7 @@ class PaymentSummarySerializer(serializers.Serializer):
 class CommissionBreakdownSerializer(serializers.Serializer):
     """Commission breakdown by user tier"""
     
-    user_tier = serializers.CharField(max_length=10)
+    user_tier = serializers.CharField(max_length=15)
     commission_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
     total_rides = serializers.IntegerField()
     total_commission = serializers.DecimalField(max_digits=12, decimal_places=2)

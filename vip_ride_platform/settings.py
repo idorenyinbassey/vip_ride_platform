@@ -421,25 +421,35 @@ DRIVER_SUBSCRIPTION_FEES = {
 }
 
 # Payment Gateway Configuration
+# Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
 PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
 PAYSTACK_WEBHOOK_SECRET = os.environ.get('PAYSTACK_WEBHOOK_SECRET', '')
 PAYSTACK_TEST_MODE = os.environ.get(
-    'PAYSTACK_TEST_MODE', 'True'
+    'PAYSTACK_TEST_MODE', 'False'
 ).lower() == 'true'
 
+# Flutterwave Configuration
 FLUTTERWAVE_PUBLIC_KEY = os.environ.get('FLUTTERWAVE_PUBLIC_KEY', '')
 FLUTTERWAVE_SECRET_KEY = os.environ.get('FLUTTERWAVE_SECRET_KEY', '')
 FLUTTERWAVE_ENCRYPTION_KEY = os.environ.get('FLUTTERWAVE_ENCRYPTION_KEY', '')
 FLUTTERWAVE_WEBHOOK_SECRET = os.environ.get('FLUTTERWAVE_WEBHOOK_SECRET', '')
 FLUTTERWAVE_TEST_MODE = os.environ.get(
-    'FLUTTERWAVE_TEST_MODE', 'True'
+    'FLUTTERWAVE_TEST_MODE', 'False'
 ).lower() == 'true'
 
+# Stripe Configuration
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
-STRIPE_TEST_MODE = os.environ.get('STRIPE_TEST_MODE', 'True').lower() == 'true'
+STRIPE_TEST_MODE = os.environ.get('STRIPE_TEST_MODE', 'False').lower() == 'true'
+
+# Google Pay Configuration
+GOOGLE_PAY_MERCHANT_ID = os.environ.get('GOOGLE_PAY_MERCHANT_ID', '')
+GOOGLE_PAY_ENVIRONMENT = os.environ.get('GOOGLE_PAY_ENVIRONMENT', 'PRODUCTION')  # TEST or PRODUCTION
+GOOGLE_PAY_GATEWAY = os.environ.get('GOOGLE_PAY_GATEWAY', 'stripe')  # Which gateway to process Google Pay through
+GOOGLE_PAY_GATEWAY_MERCHANT_ID = os.environ.get('GOOGLE_PAY_GATEWAY_MERCHANT_ID', '')
+GOOGLE_PAY_TEST_MODE = os.environ.get('GOOGLE_PAY_TEST_MODE', 'False').lower() == 'true'
 
 # Exchange Rate API Configuration
 FIXER_API_KEY = os.environ.get('FIXER_API_KEY', '')
@@ -449,8 +459,8 @@ EXCHANGE_RATE_UPDATE_INTERVAL = int(
 )
 
 # Payment Configuration
-DEFAULT_PAYMENT_GATEWAY = os.environ.get('DEFAULT_PAYMENT_GATEWAY', 'paystack')
-PAYMENT_GATEWAY_PRIORITY = ['paystack', 'flutterwave', 'stripe']
+DEFAULT_PAYMENT_GATEWAY = os.environ.get('DEFAULT_PAYMENT_GATEWAY', 'stripe')
+PAYMENT_GATEWAY_PRIORITY = ['stripe', 'flutterwave', 'paystack', 'google_pay']
 PAYMENT_MAX_RETRY_ATTEMPTS = int(
     os.environ.get('PAYMENT_MAX_RETRY_ATTEMPTS', '3')
 )

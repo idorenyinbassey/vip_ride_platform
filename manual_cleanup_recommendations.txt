@@ -1,0 +1,31 @@
+VIP Ride Platform - Manual Cleanup Recommendations
+==================================================
+
+SAFE TO DELETE (after verification):
+- pricing/models_backup.py (minimal backup)
+- pricing/models_new.py and models_simple.py (if models.py is current)
+- One of: core/encryption.py OR gps_tracking/encryption.py (keep the one being imported)
+
+FILES TO KEEP:
+- All __init__.py files (required for Python packages)
+- pricing/models.py (main models file)
+- accounts/payment_service.py (main payment service)
+- vip_ride_platform/api_views.py (main API views)
+
+FLUTTER FILES:
+- Regular and VIP client app files appear to have clean backups removed
+
+VERIFICATION COMMANDS:
+To check which encryption file is being used:
+  grep -r "from.*encryption import" . --exclude-dir=.venv
+  grep -r "import.*encryption" . --exclude-dir=.venv
+
+To check model imports:
+  grep -r "from pricing.models" . --exclude-dir=.venv
+  grep -r "import.*models" . --include="*.py" --exclude-dir=.venv
+
+NEXT STEPS:
+1. Run this script: bash safe_cleanup.sh
+2. Review the manual_cleanup_recommendations.txt
+3. Test the application to ensure nothing breaks
+4. Remove the remaining duplicates manually after verification

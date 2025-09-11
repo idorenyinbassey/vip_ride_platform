@@ -32,7 +32,7 @@ class TierBasedPermission(permissions.BasePermission):
         # Define tier hierarchy
         tier_hierarchy = {
             'normal': 0,
-            'premium': 1,
+            'vip_premium': 1,
             'vip': 2,
             'concierge': 3,
             'admin': 4

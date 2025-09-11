@@ -15,6 +15,8 @@ from .views import (
     UserRegistrationView,
     PasswordChangeView,
     MFAVerificationView,
+    MFACommunicationView,
+    MFAConfirmationView,
     UserProfileView,
     DeviceManagementView,
     user_security_status,
@@ -42,6 +44,8 @@ urlpatterns = [
     path('password/change/', PasswordChangeView.as_view(), name='password_change'),
     
     # MFA endpoints
+    path('auth/mfa/setup/', MFACommunicationView.as_view(), name='mfa-setup'),
+    path('auth/mfa/confirm/', MFAConfirmationView.as_view(), name='mfa-confirmation'),
     path('auth/mfa/verify/', MFAVerificationView.as_view(), name='mfa-verification'),
     
     # User profile

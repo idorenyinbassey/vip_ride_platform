@@ -49,8 +49,8 @@ class UserManager(BaseUserManager):
 
 class UserTier(models.TextChoices):
     NORMAL = 'normal', 'Normal'
-    PREMIUM = 'premium', 'Premium'
     VIP = 'vip', 'VIP'
+    VIP_PREMIUM = 'vip_premium', 'VIP Premium'
 
 
 class UserType(models.TextChoices):
@@ -87,7 +87,7 @@ class User(AbstractUser):
         default=UserType.CUSTOMER
     )
     tier = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=UserTier.choices,
         default=UserTier.NORMAL
     )
@@ -166,8 +166,8 @@ class User(AbstractUser):
         """Check if user can access a specific tier service"""
         tier_hierarchy = {
             UserTier.NORMAL: 1,
-            UserTier.PREMIUM: 2,
-            UserTier.VIP: 3,
+            UserTier.VIP: 2,  # Now VIP is the lower paid tier
+            UserTier.VIP_PREMIUM: 3,  # VIP Premium is the highest
         }
         user_level = tier_hierarchy.get(self.tier, 0)
         required_level = tier_hierarchy.get(required_tier, 0)
@@ -527,6 +527,81 @@ class MFAToken(models.Model):
     
     def __str__(self):
         return f"MFA {self.token_type} for {self.user.email}"
+    
+    def generate_totp_secret(self):
+        """Generate TOTP secret key"""
+        if self.token_type == 'totp':
+            import pyotp
+            self.secret_key = pyotp.random_base32()
+            self.save()
+    
+    def get_totp_uri(self):
+        """Get TOTP URI for QR code generation"""
+        if self.token_type == 'totp' and self.secret_key:
+            import pyotp
+            return pyotp.totp.TOTP(self.secret_key).provisioning_uri(
+                name=self.user.email,
+                issuer_name="VIP Ride Platform"
+            )
+        return None
+    
+    def verify_totp(self, token: str) -> bool:
+        """Verify TOTP token"""
+        if self.token_type != 'totp' or not self.secret_key:
+            return False
+        
+        import pyotp
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        totp = pyotp.TOTP(self.secret_key)
+        is_valid = totp.verify(token, valid_window=1)  # Allow 30s window
+        
+        if is_valid:
+            self.last_used_at = timezone.now()
+            self.usage_count += 1
+            self.failed_attempts = 0
+            self.save()
+        else:
+            self.failed_attempts += 1
+            if self.failed_attempts >= 3:
+                self.locked_until = timezone.now() + timedelta(minutes=15)
+            self.save()
+        
+        return is_valid
+    
+    def verify_backup_code(self, code: str) -> bool:
+        """Verify backup code"""
+        if self.token_type != 'backup' or code not in self.backup_codes:
+            return False
+        
+        from django.utils import timezone
+        
+        # Remove used backup code
+        self.backup_codes.remove(code)
+        self.last_used_at = timezone.now()
+        self.usage_count += 1
+        self.save()
+        
+        return True
+    
+    def generate_backup_codes(self, count: int = 10):
+        """Generate new backup codes"""
+        if self.token_type == 'backup':
+            import secrets
+            codes = []
+            for _ in range(count):
+                code = secrets.token_hex(4).upper()
+                codes.append(code)
+            self.backup_codes = codes
+            self.save()
+            return codes
+        return []
+    
+    def is_locked(self) -> bool:
+        """Check if MFA token is locked due to failed attempts"""
+        from django.utils import timezone
+        return self.locked_until and timezone.now() < self.locked_until
 
 
 class LoginAttempt(models.Model):

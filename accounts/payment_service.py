@@ -14,19 +14,32 @@ from typing import Dict, Any, Optional
 
 # Import payment libraries
 try:
-    from flutterwave import Rave
+    from rave_python import Rave
+    FLUTTERWAVE_AVAILABLE = True
 except ImportError:
     Rave = None
+    FLUTTERWAVE_AVAILABLE = False
 
 try:
-    from pypaystack2 import Paystack
+    from paystack import Paystack
+    PAYSTACK_AVAILABLE = True
 except ImportError:
-    Paystack = None
+    PAYSTACK_AVAILABLE = False
+    # Try alternative import
+    try:
+        import paystack as paystack_lib
+        PAYSTACK_AVAILABLE = True
+    except ImportError:
+        paystack_lib = None
+        PAYSTACK_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
 # Configure Stripe
-stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+stripe_secret_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+if not stripe_secret_key:
+    logger.warning("STRIPE_SECRET_KEY not configured. Set environment variable for production.")
+stripe.api_key = stripe_secret_key
 
 class PaymentError(Exception):
     """Custom exception for payment processing errors"""
@@ -35,14 +48,14 @@ class PaymentError(Exception):
 class PremiumCardPaymentService:
     """Service for processing Premium Digital Card payments"""
     
-    SUPPORTED_PAYMENT_METHODS = ['stripe', 'google_pay', 'paypal', 'flutterwave', 'paystack']
+    SUPPORTED_PAYMENT_METHODS = ['stripe', 'google_pay', 'flutterwave', 'paystack']
     
     @staticmethod
     def process_payment(
         payment_method: str,
         amount: Decimal,
         currency: str = 'usd',
-        card_tier: str = 'premium',
+        card_tier: str = 'vip',
         customer_email: str = '',
         payment_token: Optional[str] = None,
         payment_intent_id: Optional[str] = None
@@ -65,6 +78,20 @@ class PremiumCardPaymentService:
         
         if payment_method not in PremiumCardPaymentService.SUPPORTED_PAYMENT_METHODS:
             raise PaymentError(f"Unsupported payment method: {payment_method}")
+        
+        # Validate API keys are configured for the selected payment method
+        if payment_method == 'stripe':
+            if not getattr(settings, 'STRIPE_SECRET_KEY', ''):
+                raise PaymentError("Stripe API key not configured. Set STRIPE_SECRET_KEY environment variable.")
+        elif payment_method == 'paystack':
+            if not getattr(settings, 'PAYSTACK_SECRET_KEY', ''):
+                raise PaymentError("Paystack API key not configured. Set PAYSTACK_SECRET_KEY environment variable.")
+        elif payment_method == 'flutterwave':
+            if not getattr(settings, 'FLUTTERWAVE_SECRET_KEY', ''):
+                raise PaymentError("Flutterwave API key not configured. Set FLUTTERWAVE_SECRET_KEY environment variable.")
+        elif payment_method == 'google_pay':
+            if not getattr(settings, 'STRIPE_SECRET_KEY', ''):
+                raise PaymentError("Google Pay requires Stripe API key. Set STRIPE_SECRET_KEY environment variable.")
         
         try:
             if payment_method == 'stripe':
@@ -161,13 +188,10 @@ class PremiumCardPaymentService:
                     'receipt_url': payment_intent.charges.data[0].receipt_url if payment_intent.charges.data else None
                 }
             else:
-                raise PaymentError(f"Payment failed with status: {payment_intent.status}")
+                raise PaymentError(f"Stripe payment failed with status: {payment_intent.status}")
                 
-        except stripe.error.CardError as e:
-            # Card was declined
-            raise PaymentError(f"Card declined: {e.user_message}")
         except stripe.error.StripeError as e:
-            # Stripe API error
+            logger.error(f"Payment processing failed: Stripe error: {str(e)}")
             raise PaymentError(f"Stripe error: {str(e)}")
     
     @staticmethod
@@ -218,6 +242,7 @@ class PremiumCardPaymentService:
                 raise PaymentError(f"Google Pay payment failed with status: {payment_intent.status}")
                 
         except stripe.error.StripeError as e:
+            logger.error(f"Payment processing failed: Google Pay payment error: {str(e)}")
             raise PaymentError(f"Google Pay payment error: {str(e)}")
     
     @staticmethod
@@ -228,15 +253,18 @@ class PremiumCardPaymentService:
         card_tier: str,
         payment_token: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Process Flutterwave payment using python-flutterwave"""
-        if Rave is None:
+        """Process Flutterwave payment using rave_python"""
+        if not FLUTTERWAVE_AVAILABLE:
             raise PaymentError("Flutterwave package not installed")
             
         try:
+            # Initialize Flutterwave
+            secret_key = getattr(settings, 'FLUTTERWAVE_SECRET_KEY', '')
+            
             rave = Rave(
                 getattr(settings, 'FLUTTERWAVE_PUBLIC_KEY', ''),
-                getattr(settings, 'FLUTTERWAVE_SECRET_KEY', ''),
-                production=getattr(settings, 'FLUTTERWAVE_PRODUCTION', False)
+                secret_key,
+                production=not getattr(settings, 'FLUTTERWAVE_TEST_MODE', True)
             )
             
             # payment_token is expected to be a transaction reference from frontend
@@ -256,7 +284,7 @@ class PremiumCardPaymentService:
                 raise PaymentError(f"Flutterwave payment failed: {res}")
                 
         except Exception as e:
-            logger.error(f"Flutterwave payment error: {str(e)}")
+            logger.error(f"Payment processing failed: Flutterwave error: {str(e)}")
             raise PaymentError(f"Flutterwave error: {str(e)}")
 
     @staticmethod
@@ -267,31 +295,43 @@ class PremiumCardPaymentService:
         card_tier: str,
         payment_token: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Process Paystack payment using pypaystack2"""
-        if Paystack is None:
+        """Process Paystack payment using paystack package"""
+        if not PAYSTACK_AVAILABLE:
             raise PaymentError("Paystack package not installed")
             
         try:
-            paystack = Paystack(secret_key=getattr(settings, 'PAYSTACK_SECRET_KEY', ''))
+            # Initialize Paystack with secret key
+            secret_key = getattr(settings, 'PAYSTACK_SECRET_KEY', '')
             
-            # payment_token is expected to be a Paystack reference from frontend
-            res = paystack.transaction.verify(payment_token)
+            # Real Paystack integration using requests (since paystack package structure varies)
+            headers = {
+                'Authorization': f'Bearer {secret_key}',
+                'Content-Type': 'application/json'
+            }
             
-            if res['status'] and res['data']['status'] == 'success':
-                return {
-                    'success': True,
-                    'transaction_id': res['data']['reference'],
-                    'payment_method': 'paystack',
-                    'amount': float(amount),
-                    'currency': currency,
-                    'status': 'completed',
-                    'receipt_url': None
-                }
+            # Verify transaction if payment_token is a reference
+            verify_url = f'https://api.paystack.co/transaction/verify/{payment_token}'
+            response = requests.get(verify_url, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data['status'] and data['data']['status'] == 'success':
+                    return {
+                        'success': True,
+                        'transaction_id': data['data']['reference'],
+                        'payment_method': 'paystack',
+                        'amount': float(amount),
+                        'currency': currency,
+                        'status': 'completed',
+                        'receipt_url': data['data'].get('receipt_url')
+                    }
+                else:
+                    raise PaymentError(f"Paystack payment failed: {data}")
             else:
-                raise PaymentError(f"Paystack payment failed: {res}")
+                raise PaymentError(f"Paystack verification failed: {response.text}")
                 
         except Exception as e:
-            logger.error(f"Paystack payment error: {str(e)}")
+            logger.error(f"Payment processing failed: Paystack error: {str(e)}")
             raise PaymentError(f"Paystack error: {str(e)}")
     
     @staticmethod

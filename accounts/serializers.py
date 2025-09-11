@@ -150,7 +150,7 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
     def _check_mfa_requirements(self, user, device_fingerprint):
         """Check if MFA is required for this login"""
         # Premium and VIP users always require MFA
-        if user.tier in ['premium', 'vip']:
+        if user.tier in ['vip_premium', 'vip']:
             return True
         
         # Check tier-specific MFA settings
@@ -216,28 +216,38 @@ class TierBasedTokenObtainPairSerializer(TokenObtainPairSerializer):
         return False
     
     def _verify_totp_token(self, user, token):
-        """Verify TOTP token"""
+        """Verify TOTP token using pyotp"""
         try:
             # Basic validation first
             if not token or len(token) != 6 or not token.isdigit():
                 return False
             
-            # SECURITY: In development/testing, fail explicitly to prevent bypass
-            # TODO: Implement proper TOTP verification with pyotp or similar
-            # For production, this should verify against user's TOTP secret
+            # Get user's active TOTP token from MFAToken model
+            from .models import MFAToken
             
-            # Development/testing mode - explicitly fail for security
-            if hasattr(user, 'mfa_secret') and user.mfa_secret:
-                # Placeholder for actual TOTP verification
-                # import pyotp
-                # totp = pyotp.TOTP(user.mfa_secret)
-                # return totp.verify(token, valid_window=1)
-                pass
-            
-            # Fail safe - do not allow bypass in any environment
-            return False
-            
-        except Exception:
+            try:
+                mfa_token = MFAToken.objects.get(
+                    user=user,
+                    token_type='totp',
+                    is_active=True
+                )
+                
+                # Check if token is locked due to failed attempts
+                if mfa_token.is_locked():
+                    return False
+                
+                # Use the MFAToken's verify_totp method which handles pyotp verification
+                return mfa_token.verify_totp(token)
+                
+            except MFAToken.DoesNotExist:
+                # No TOTP setup for this user
+                return False
+                
+        except Exception as e:
+            # Log the exception in production
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"TOTP verification error: {e}")
             return False
     
     def _verify_backup_code(self, user, code):
@@ -279,10 +289,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validators=[validate_phone_number]
     )
     tier = serializers.ChoiceField(
-        choices=['normal', 'premium', 'vip'],
-        default='normal'
+        choices=['normal', 'vip_premium', 'vip'],
+        default='normal',
+        help_text="User tier: normal, vip_premium, or vip"
     )
-    
     class Meta:
         model = User
         fields = [

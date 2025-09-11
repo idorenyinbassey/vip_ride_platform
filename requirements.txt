@@ -34,8 +34,10 @@ boto3==1.40.3
 # Payment Processing
 requests==2.32.4
 stripe==12.4.0
-pypaystack2==3.0.0
-python-flutterwave==1.2.2
+paystack==1.5.0
+rave-python==1.4.2
+pycryptodome==3.23.0
+simplejson==3.20.1
 
 # Task Queue
 flower==2.0.1  # Celery monitoring
