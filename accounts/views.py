@@ -875,32 +875,98 @@ class MFAStatusView(APIView):
 
 
 class UserProfileView(RetrieveUpdateAPIView):
-    """User profile view"""
+    """Enhanced user profile view with real-time tier status"""
     
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):
         return self.request.user
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Get user profile with additional tier information"""
+        user = self.get_object()
+        serializer = self.get_serializer(user)
+        
+        # Add tier-specific information
+        tier_info = self.get_tier_information(user)
+        premium_cards = self.get_user_premium_cards(user)
+        
+        response_data = serializer.data
+        response_data.update({
+            'tier_info': tier_info,
+            'premium_cards': premium_cards,
+            'requires_mfa': self.check_mfa_requirement(user),
+            'session_valid': True,
+            'last_tier_update': user.updated_at.isoformat() if hasattr(user, 'updated_at') else None
+        })
+        
+        return Response(response_data)
+    
+    def get_tier_information(self, user):
+        """Get detailed tier information"""
+        from .rbac_settings import USER_TIER_SETTINGS
+        
+        tier_config = USER_TIER_SETTINGS.get(user.tier, {})
+        return {
+            'current_tier': user.tier,
+            'tier_display': user.get_tier_display() if hasattr(user, 'get_tier_display') else user.tier.title(),
+            'permissions': tier_config.get('permissions', []),
+            'features': tier_config.get('features', []),
+            'rate_limits': tier_config.get('rate_limits', {}),
+            'requires_mfa': tier_config.get('require_mfa', False)
+        }
+    
+    def get_user_premium_cards(self, user):
+        """Get user's premium cards status"""
+        try:
+            from .premium_card_models import PremiumDigitalCard
+            
+            cards = PremiumDigitalCard.objects.filter(owner=user).values(
+                'id', 'tier', 'status', 'activated_at', 'expires_at'
+            )
+            
+            return {
+                'total_cards': cards.count(),
+                'active_cards': cards.filter(status='active').count(),
+                'highest_tier_card': cards.filter(status='active').order_by('-tier').first(),
+                'cards': list(cards)
+            }
+        except:
+            return {'total_cards': 0, 'active_cards': 0, 'cards': []}
+    
+    def check_mfa_requirement(self, user):
+        """Check if user requires MFA based on current tier"""
+        from .rbac_settings import USER_TIER_SETTINGS
+        
+        tier_config = USER_TIER_SETTINGS.get(user.tier, {})
+        return tier_config.get('require_mfa', False)
 
 
 class DeviceManagementView(APIView):
-    """Device management view"""
+    """Enhanced device management for Flutter integration"""
     
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
         """Get user's trusted devices"""
-        # Would get from TrustedDevice model
-        devices = []
+        user = request.user
+        devices = TrustedDevice.objects.filter(user=user, is_active=True).values(
+            'id', 'device_name', 'device_fingerprint', 'trust_level',
+            'first_used_at', 'last_used_at', 'usage_count'
+        )
+        
+        current_device_fp = get_device_fingerprint(request)
         
         return Response({
-            'devices': devices,
-            'current_device': get_device_fingerprint(request)
+            'devices': list(devices),
+            'current_device': current_device_fp,
+            'is_current_trusted': devices.filter(device_fingerprint=current_device_fp).exists(),
+            'total_trusted_devices': devices.count()
         })
     
     def post(self, request):
-        """Manage device trust"""
+        """Register or manage device trust - Flutter compatible"""
         serializer = DeviceManagementSerializer(
             data=request.data,
             context={'request': request}
@@ -909,36 +975,80 @@ class DeviceManagementView(APIView):
         if serializer.is_valid():
             try:
                 action = serializer.validated_data['action']
-                device_fp = serializer.validated_data['device_fingerprint']
+                device_fp = serializer.validated_data.get('device_fingerprint') or get_device_fingerprint(request)
+                device_name = serializer.validated_data.get('device_name', 'Flutter Mobile App')
+                trust_level = serializer.validated_data.get('trust_level', 'basic')
                 
-                if action == 'trust':
-                    # Add device to trusted list
-                    logger.info(f"Device trusted for user: {request.user.email}")
-                    message = _('Device added to trusted list.')
+                if action == 'register' or action == 'trust':
+                    # Register/trust device for Flutter
+                    device, created = TrustedDevice.objects.get_or_create(
+                        user=request.user,
+                        device_fingerprint=device_fp,
+                        defaults={
+                            'device_name': device_name,
+                            'user_agent': request.META.get('HTTP_USER_AGENT', 'Flutter App'),
+                            'ip_address': get_client_ip(request),
+                            'trust_level': trust_level,
+                            'is_active': True
+                        }
+                    )
+                    
+                    if not created:
+                        # Update existing device
+                        device.device_name = device_name
+                        device.trust_level = trust_level
+                        device.is_active = True
+                        device.last_used_at = timezone.now()
+                        device.usage_count += 1
+                        device.save()
+                    
+                    # Log device registration
+                    logger.info(f"Device {'registered' if created else 'updated'} for user: {request.user.email}")
+                    
+                    return Response({
+                        'success': True,
+                        'message': f'Device {"registered" if created else "updated"} successfully.',
+                        'device': {
+                            'id': str(device.id),
+                            'device_name': device.device_name,
+                            'trust_level': device.trust_level,
+                            'is_trusted': True,
+                            'registered_at': device.first_used_at
+                        }
+                    })
                 
-                elif action == 'untrust':
-                    # Remove from trusted list
+                elif action == 'untrust' or action == 'remove':
+                    # Remove device trust
+                    TrustedDevice.objects.filter(
+                        user=request.user,
+                        device_fingerprint=device_fp
+                    ).update(is_active=False)
+                    
                     logger.info(f"Device untrusted for user: {request.user.email}")
-                    message = _('Device removed from trusted list.')
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'Device removed from trusted list.',
+                        'device_fingerprint': device_fp
+                    })
                 
-                elif action == 'remove':
-                    # Delete device record
-                    logger.info(f"Device removed for user: {request.user.email}")
-                    message = _('Device removed successfully.')
-                
-                return Response({'message': message})
-                
+                else:
+                    return Response({
+                        'success': False,
+                        'error': 'Invalid action. Use: register, trust, untrust, or remove'
+                    }, status=400)
+                    
             except Exception as e:
-                logger.error(f"Device management error: {str(e)}")
-                return Response(
-                    {'error': _('Device management failed.')},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                logger.error(f"Device management error for {request.user.email}: {str(e)}")
+                return Response({
+                    'success': False,
+                    'error': 'Device management failed. Please try again.'
+                }, status=500)
         
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({
+            'success': False,
+            'errors': serializer.errors
+        }, status=400)
 
 
 @api_view(['GET'])

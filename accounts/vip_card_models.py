@@ -99,6 +99,18 @@ class VIPDigitalCard(models.Model):
     def __str__(self):
         return f"{self.serial_number} - {self.tier.upper()} ({self.status})"
     
+    def save(self, *args, **kwargs):
+        """Auto-generate serial number, activation code, features, and metadata on creation"""
+        if not self.serial_number:
+            self.serial_number = self.generate_serial_number(self.tier)
+        if not self.activation_code:
+            self.activation_code = self.generate_activation_code()
+        if not self.card_features or self.card_features == {}:
+            self.card_features = VIPDigitalCard.get_tier_features(self.tier)
+        if not self.encrypted_metadata or self.encrypted_metadata == '':
+            self.encrypted_metadata = self.generate_encrypted_metadata()
+        super().save(*args, **kwargs)
+    
     @classmethod
     def generate_serial_number(cls, tier):
         """Generate unique serial number based on tier"""
@@ -123,6 +135,45 @@ class VIPDigitalCard(models.Model):
             code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10))
             if not cls.objects.filter(activation_code=code).exists():
                 return code
+    
+    def generate_encrypted_metadata(self):
+        """Generate encrypted metadata for the card"""
+        import json
+        
+        metadata = {
+            "card_type": self.tier.upper(),
+            "security_level": "high" if self.tier == 'vip_premium' else "medium",
+            "encryption_key_id": f"{self.tier}_2025",
+            "access_permissions": {
+                "hotel_booking": self.tier == 'vip_premium',
+                "encrypted_gps": self.tier == 'vip_premium',
+                "premium_fleet": True,
+                "concierge_access": True,
+                "armored_vehicles": self.tier == 'vip_premium'
+            },
+            "compliance": {
+                "ndpr_compliant": True,
+                "data_retention_days": 365 if self.tier == 'vip_premium' else 180,
+                "encryption_standard": "AES-256-GCM"
+            },
+            "tier_specific": {
+                "commission_rate": "25-30%" if self.tier == 'vip_premium' else "20-25%",
+                "priority_level": 1 if self.tier == 'vip_premium' else 2,
+                "enhanced_verification": self.tier == 'vip_premium',
+                "hotel_partnerships": self.tier == 'vip_premium'
+            },
+            "generated_at": timezone.now().isoformat(),
+            "card_id": str(self.id) if self.id else "pending"
+        }
+        
+        # Convert to JSON string and encrypt (basic implementation)
+        metadata_json = json.dumps(metadata, sort_keys=True)
+        
+        # Simple base64 encoding for now (in production, use proper encryption)
+        import base64
+        encoded_metadata = base64.b64encode(metadata_json.encode()).decode()
+        
+        return encoded_metadata
     
     @classmethod
     def create_card(cls, tier, features=None):
@@ -168,12 +219,13 @@ class VIPDigitalCard(models.Model):
                 'secondary': '#A9A9A9'  # Dark Gray
             }
     
-    def activate_card(self, user, client_ip=None):
+    def activate_card(self, user, client_ip=None, user_agent='', method='mobile_app', admin_user=None):
         """
         Activate card for a user and automatically update their tier
         """
         from django.db import transaction
         from .models import User
+        from .activation_history_models import CardActivationHistory
         
         if self.status != 'inactive':
             raise ValueError(f"Card is already {self.status} and cannot be activated")
@@ -181,31 +233,52 @@ class VIPDigitalCard(models.Model):
         if self.activated_by is not None:
             raise ValueError("Card has already been activated by another user")
         
+        # Create activation history record
+        activation_record = CardActivationHistory.create_vip_activation_record(
+            vip_card=self,
+            user=user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            method=method,
+            admin_user=admin_user
+        )
+        
         # Use transaction to ensure atomicity
-        with transaction.atomic():
-            # Activate the card
-            self.status = 'active'
-            self.activated_by = user
-            self.activated_date = timezone.now()
-            self.activation_ip = client_ip
-            
-            # Set expiry date (1 year for VIP, 18 months for VIP Premium)
-            if self.tier == 'vip':
-                self.expiry_date = timezone.now() + timezone.timedelta(days=365)
-            elif self.tier == 'vip_premium':
-                self.expiry_date = timezone.now() + timezone.timedelta(days=547)  # 18 months
-            
-            self.save()
-            
-            # Update user tier automatically (no duplicate users)
-            old_tier = user.tier
-            user.tier = self.tier
-            
-            # Automatically enable MFA for VIP and VIP Premium users
-            if self.tier in ['vip', 'vip_premium']:
-                user.enable_mfa_for_tier(save=False)
-            
-            user.save()
+        try:
+            with transaction.atomic():
+                # Activate the card
+                self.status = 'active'
+                self.activated_by = user
+                self.activated_date = timezone.now()
+                self.activation_ip = client_ip
+                
+                # Set expiry date (1 year for VIP, 18 months for VIP Premium)
+                if self.tier == 'vip':
+                    self.expiry_date = timezone.now() + timezone.timedelta(days=365)
+                elif self.tier == 'vip_premium':
+                    self.expiry_date = timezone.now() + timezone.timedelta(days=547)  # 18 months
+                
+                self.save()
+                
+                # Update user tier automatically (no duplicate users)
+                old_tier = user.tier
+                user.tier = self.tier
+                
+                # Automatically enable MFA for VIP and VIP Premium users
+                if self.tier in ['vip', 'vip_premium']:
+                    user.enable_mfa_for_tier(save=False)
+                
+                user.save()
+                
+                # Mark activation as successful
+                activation_record.mark_successful()
+                
+                return True
+                
+        except Exception as e:
+            # Mark activation as failed
+            activation_record.mark_failed(str(e))
+            raise
             
             # Create activation history record
             CardActivationHistory.objects.create(
@@ -296,7 +369,9 @@ class VIPDigitalCard(models.Model):
     @staticmethod
     def get_tier_features(tier):
         """Get default features for a tier"""
-        if tier == 'vip':
+        tier_lower = tier.lower() if tier else ''
+        
+        if tier_lower in ['vip', 'vip']:
             return {
                 'priority_matching': True,
                 'discrete_booking': True,
@@ -307,7 +382,7 @@ class VIPDigitalCard(models.Model):
                 'exclusive_discounts': True,
                 'priority_support': True,
             }
-        elif tier == 'vip_premium':
+        elif tier_lower in ['vip_premium', 'vip premium']:
             return {
                 'priority_matching': True,
                 'discrete_booking': True,
@@ -328,38 +403,6 @@ class VIPDigitalCard(models.Model):
             }
         else:
             return {}
-
-
-class CardActivationHistory(models.Model):
-    """Track card activation history and tier changes"""
-    
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    card = models.ForeignKey(
-        VIPDigitalCard, 
-        on_delete=models.CASCADE, 
-        related_name='activation_history'
-    )
-    user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='card_activation_history'
-    )
-    activation_date = models.DateTimeField(auto_now_add=True)
-    client_ip = models.GenericIPAddressField(null=True, blank=True)
-    previous_tier = models.CharField(max_length=20, default='regular')
-    new_tier = models.CharField(max_length=20)
-    notes = models.TextField(blank=True, help_text="Additional notes about activation/deactivation")
-    
-    class Meta:
-        db_table = 'card_activation_history'
-        ordering = ['-activation_date']
-        indexes = [
-            models.Index(fields=['user', 'activation_date']),
-            models.Index(fields=['card', 'activation_date']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.card.serial_number} - {self.previous_tier} → {self.new_tier}"
 
 
 class CardBatchGeneration(models.Model):

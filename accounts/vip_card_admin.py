@@ -356,6 +356,29 @@ class VIPDigitalCardAdmin(admin.ModelAdmin):
         
         self.message_user(request, f'Extended expiry date for {count} cards')
     extend_expiry_date.short_description = "Extend expiry by 6 months"
+    
+    # Add inlines for activation history
+    inlines = []
+    
+    def get_inlines(self, request, obj):
+        """Add activation history inline for existing cards"""
+        inlines = []
+        if obj and obj.pk:  # Only show for existing cards
+            from .activation_history_admin import CardActivationHistoryInline, CardUsageLogInline
+            
+            # Filter inlines to show only VIP card history
+            class VIPCardActivationHistoryInline(CardActivationHistoryInline):
+                def get_queryset(self, request):
+                    qs = super().get_queryset(request)
+                    return qs.filter(card_type='vip')
+            
+            class VIPCardUsageLogInline(CardUsageLogInline):
+                def get_queryset(self, request):
+                    qs = super().get_queryset(request)
+                    return qs.filter(vip_card__isnull=False)
+            
+            inlines.extend([VIPCardActivationHistoryInline, VIPCardUsageLogInline])
+        return inlines
 
 
 class CardActivationHistoryAdmin(admin.ModelAdmin):

@@ -1,0 +1,179 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='accounts' %}">Accounts</a>
+    &rsaquo; <a href="{% url 'admin:accounts_premiumcardbatchgeneration_changelist' %}">Premium Card Batch
+        Generations</a>
+    &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="content-main">
+    <h1>{{ title }}</h1>
+
+    <div class="module aligned wide">
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_tier">Tier:</label>
+                    <select name="tier" id="id_tier" required>
+                        <option value="">---------</option>
+                        {% for value, label in tier_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_quantity">Quantity:</label>
+                    <input type="number" name="quantity" id="id_quantity" min="1" max="1000" required>
+                    <p class="help">Number of cards to generate (max 1000)</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_price_per_card">Price per Card (USD):</label>
+                    <input type="number" name="price_per_card" id="id_price_per_card" step="0.01" min="0" value="99.99"
+                        required>
+                    <p class="help">Price for each card in the batch</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_validity_months">Validity (Months):</label>
+                    <input type="number" name="validity_months" id="id_validity_months" min="1" max="60" value="12"
+                        required>
+                    <p class="help">Card validity period in months</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_notes">Notes:</label>
+                    <textarea name="notes" id="id_notes" rows="3" cols="40"></textarea>
+                    <p class="help">Optional notes about this batch</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-box">
+                    <div id="batch-summary"
+                        style="background: #f0f8ff; padding: 15px; border-radius: 5px; margin: 10px 0; display: none;">
+                        <h3>Batch Summary:</h3>
+                        <p><strong>Total Cards:</strong> <span id="summary-quantity">0</span></p>
+                        <p><strong>Price per Card:</strong> $<span id="summary-price">0.00</span></p>
+                        <p><strong>Total Value:</strong> $<span id="summary-total">0.00</span></p>
+                        <p><strong>Validity:</strong> <span id="summary-validity">0</span> months</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="submit-row">
+                <input type="submit" value="Generate Cards" class="default"
+                    onclick="return confirm('Are you sure you want to generate this batch of Premium Digital Cards?');">
+                <a href="{% url 'admin:accounts_premiumcardbatchgeneration_changelist' %}"
+                    class="button cancel-link">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const quantityInput = document.getElementById('id_quantity');
+        const priceInput = document.getElementById('id_price_per_card');
+        const validityInput = document.getElementById('id_validity_months');
+        const summary = document.getElementById('batch-summary');
+
+        function updateSummary() {
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const validity = parseInt(validityInput.value) || 0;
+            const total = quantity * price;
+
+            if (quantity > 0) {
+                document.getElementById('summary-quantity').textContent = quantity;
+                document.getElementById('summary-price').textContent = price.toFixed(2);
+                document.getElementById('summary-total').textContent = total.toFixed(2);
+                document.getElementById('summary-validity').textContent = validity;
+                summary.style.display = 'block';
+            } else {
+                summary.style.display = 'none';
+            }
+        }
+
+        quantityInput.addEventListener('input', updateSummary);
+        priceInput.addEventListener('input', updateSummary);
+        validityInput.addEventListener('input', updateSummary);
+
+        // Validation
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const quantity = parseInt(quantityInput.value);
+            if (quantity > 1000) {
+                alert('Cannot generate more than 1000 cards at once. Please reduce the quantity.');
+                e.preventDefault();
+                return false;
+            }
+            if (quantity <= 0) {
+                alert('Quantity must be greater than 0.');
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+
+<style>
+    .field-box {
+        margin-bottom: 15px;
+    }
+
+    .field-box label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .field-box input,
+    .field-box select,
+    .field-box textarea {
+        width: 300px;
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+
+    .field-box .help {
+        font-size: 11px;
+        color: #666;
+        margin-top: 3px;
+    }
+
+    .submit-row {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+
+    .cancel-link {
+        margin-left: 10px;
+    }
+
+    #batch-summary h3 {
+        margin-top: 0;
+        color: #2e7db8;
+    }
+</style>
+{% endblock %}

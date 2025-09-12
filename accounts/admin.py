@@ -6,11 +6,16 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from django.utils import timezone
-from django.urls import reverse
+from django.urls import reverse, path
 from .models import (
     User, Driver, UserSession, TrustedDevice, 
     MFAToken, LoginAttempt, SecurityEvent
 )
+from .premium_card_models import PremiumDigitalCard, PremiumCardTransaction
+from .premium_card_batch_models import PremiumCardBatchGeneration
+
+# Import the batch admin to ensure it's registered
+from . import premium_card_batch_admin
 
 
 @admin.register(User)
@@ -301,3 +306,160 @@ except Exception as e:
 admin.site.site_header = "VIP Ride-Hailing Platform - Accounts Management"
 admin.site.site_title = "Accounts Admin"
 admin.site.index_title = "Accounts Management Dashboard"
+
+
+# Premium Digital Card Admin
+@admin.register(PremiumDigitalCard)
+class PremiumDigitalCardAdmin(admin.ModelAdmin):
+    """Admin interface for Premium Digital Cards"""
+    
+    list_display = [
+        'card_number',
+        'tier',
+        'status',
+        'owner',
+        'price',
+        'purchased_at',
+        'activated_at',
+        'expires_at'
+    ]
+    
+    list_filter = [
+        'tier',
+        'status',
+        'created_at',
+        'purchased_at',
+        'activated_at'
+    ]
+    
+    search_fields = [
+        'card_number',
+        'verification_code',
+        'owner__email',
+        'owner__first_name',
+        'owner__last_name'
+    ]
+    
+    readonly_fields = [
+        'id',
+        'card_number',
+        'verification_code',
+        'created_at',
+        'activated_at',
+        'activation_ip'
+    ]
+    
+    fieldsets = [
+        ('Card Information', {
+            'fields': [
+                'id',
+                'card_number',
+                'verification_code',
+                'tier',
+                'status'
+            ]
+        }),
+        ('Pricing & Validity', {
+            'fields': [
+                'price',
+                'validity_months'
+            ]
+        }),
+        ('Ownership', {
+            'fields': [
+                'owner'
+            ]
+        }),
+        ('Timestamps', {
+            'fields': [
+                'created_at',
+                'purchased_at',
+                'activated_at',
+                'expires_at'
+            ]
+        }),
+        ('Metadata', {
+            'fields': [
+                'purchase_transaction_id',
+                'activation_ip'
+            ]
+        })
+    ]
+    
+    def get_urls(self):
+        """Add custom URLs for batch operations"""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'generate-batch/',
+                self.admin_site.admin_view(self.generate_batch_redirect),
+                name='accounts_premiumdigitalcard_generate_batch'
+            ),
+        ]
+        return custom_urls + urls
+    
+    def generate_batch_redirect(self, request):
+        """Redirect to batch generation admin"""
+        from django.shortcuts import redirect
+        return redirect('/admin/accounts/premiumcardbatchgeneration/generate-batch/')
+    
+    def changelist_view(self, request, extra_context=None):
+        """Add batch generation button to changelist"""
+        extra_context = extra_context or {}
+        extra_context['show_generate_batch_button'] = True
+        return super().changelist_view(request, extra_context)
+    
+    def get_inlines(self, request, obj):
+        """Add activation history inline for existing cards"""
+        inlines = []
+        if obj and obj.pk:  # Only show for existing cards
+            from .activation_history_admin import CardActivationHistoryInline, CardUsageLogInline
+            # Filter inlines to show only premium card history
+            class PremiumCardActivationHistoryInline(CardActivationHistoryInline):
+                def get_queryset(self, request):
+                    qs = super().get_queryset(request)
+                    return qs.filter(card_type='premium')
+            
+            class PremiumCardUsageLogInline(CardUsageLogInline):
+                def get_queryset(self, request):
+                    qs = super().get_queryset(request)
+                    return qs.filter(premium_card__isnull=False)
+            
+            inlines.extend([PremiumCardActivationHistoryInline, PremiumCardUsageLogInline])
+        return inlines
+
+
+@admin.register(PremiumCardTransaction)
+class PremiumCardTransactionAdmin(admin.ModelAdmin):
+    """Admin interface for Premium Card Transactions"""
+    
+    list_display = [
+        'id',
+        'card',
+        'user',
+        'amount',
+        'currency',
+        'status',
+        'payment_method',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'status',
+        'payment_method',
+        'currency',
+        'created_at'
+    ]
+    
+    search_fields = [
+        'id',
+        'card__card_number',
+        'user__email',
+        'payment_reference'
+    ]
+    
+    readonly_fields = [
+        'id',
+        'created_at',
+        'completed_at'
+    ]

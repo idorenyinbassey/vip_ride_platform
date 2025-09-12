@@ -12,7 +12,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from .vip_card_models import VIPDigitalCard, CardActivationHistory
+from .vip_card_models import VIPDigitalCard
+from .activation_history_models import CardActivationHistory
 from .utils import get_client_ip
 import logging
 import re

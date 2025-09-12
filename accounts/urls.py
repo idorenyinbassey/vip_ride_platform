@@ -29,7 +29,9 @@ from .premium_card_views import (
     PremiumCardActivationView,
     PremiumCardListView,
     user_premium_status,
-    PaymentIntentView
+    PaymentIntentView,
+    activate_premium_card,
+    user_tier_status
 )
 
 from .vip_card_views import (
@@ -72,6 +74,10 @@ urlpatterns = [
     path('premium-cards/activate/', PremiumCardActivationView.as_view(), name='premium_card_activation'),
     path('premium-cards/', PremiumCardListView.as_view(), name='premium_cards_list'),
     path('premium-status/', user_premium_status, name='user_premium_status'),
+    
+    # Flutter Integration endpoints
+    path('flutter/activate-card/', activate_premium_card, name='flutter_activate_card'),
+    path('flutter/tier-status/', user_tier_status, name='flutter_tier_status'),
     
     # VIP Digital Card endpoints (new serial number + activation code system)
     path('cards/activate/', VIPCardActivationView.as_view(), name='vip_card_activation'),

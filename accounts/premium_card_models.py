@@ -7,6 +7,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from django.db import transaction
 import uuid
 import secrets
 import string
@@ -62,6 +63,16 @@ class PremiumDigitalCard(models.Model):
         related_name='premium_cards'
     )
     
+    # Batch Reference (for bulk generation tracking)
+    batch_generation = models.ForeignKey(
+        'PremiumCardBatchGeneration',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='generated_cards',
+        help_text="Reference to batch generation if card was created in bulk"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     purchased_at = models.DateTimeField(null=True, blank=True)
@@ -71,6 +82,10 @@ class PremiumDigitalCard(models.Model):
     # Metadata
     purchase_transaction_id = models.CharField(max_length=100, blank=True, null=True)
     activation_ip = models.GenericIPAddressField(null=True, blank=True)
+    
+    # Card Features and Security
+    card_features = models.JSONField(default=dict, help_text="JSON object containing card-specific features")
+    encrypted_metadata = models.TextField(blank=True, help_text="Encrypted sensitive card data")
     
     class Meta:
         db_table = 'premium_digital_cards'
@@ -84,6 +99,18 @@ class PremiumDigitalCard(models.Model):
     
     def __str__(self):
         return f"Card {self.card_number} - {self.tier.title()} ({self.status})"
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate card number, verification code, features, and metadata on creation"""
+        if not self.card_number:
+            self.card_number = self.generate_card_number()
+        if not self.verification_code:
+            self.verification_code = self.generate_verification_code()
+        if not self.card_features or self.card_features == {}:
+            self.card_features = self.get_tier_features(self.tier)
+        if not self.encrypted_metadata or self.encrypted_metadata == '':
+            self.encrypted_metadata = self.generate_encrypted_metadata()
+        super().save(*args, **kwargs)
     
     @classmethod
     def generate_card_number(cls):
@@ -102,26 +129,125 @@ class PremiumDigitalCard(models.Model):
             if not cls.objects.filter(verification_code=code).exists():
                 return code
     
-    def activate_card(self, user, ip_address=None):
+    def get_tier_features(self, tier):
+        """Generate card features based on tier"""
+        base_features = {
+            'card_type': 'premium_digital',
+            'mobile_pay': True,
+            'contactless': True,
+            'international': True,
+            'reward_points': True,
+        }
+        
+        if tier == 'vip_premium':
+            tier_features = {
+                'concierge_service': True,
+                'airport_lounge_access': True,
+                'hotel_partnerships': True,
+                'priority_customer_service': True,
+                'travel_insurance': True,
+                'currency_conversion': True,
+                'spending_limits': {'daily': 50000, 'monthly': 500000},
+                'cash_advance': True,
+                'exclusive_merchant_offers': True,
+            }
+        else:
+            tier_features = {
+                'concierge_service': False,
+                'airport_lounge_access': False,
+                'hotel_partnerships': True,
+                'priority_customer_service': True,
+                'travel_insurance': False,
+                'currency_conversion': True,
+                'spending_limits': {'daily': 25000, 'monthly': 250000},
+                'cash_advance': False,
+                'exclusive_merchant_offers': False,
+            }
+        
+        return {**base_features, **tier_features}
+    
+    def generate_encrypted_metadata(self):
+        """Generate encrypted metadata for card security"""
+        import json
+        from datetime import datetime, timedelta
+        
+        metadata = {
+            'card_security': {
+                'cvv_encryption': True,
+                'pin_hash_method': 'bcrypt',
+                'fraud_detection': True,
+                'velocity_checking': True,
+            },
+            'activation_data': {
+                'activation_method': 'mobile_app',
+                'verification_required': True,
+                'two_factor_auth': True,
+            },
+            'usage_controls': {
+                'merchant_categories_blocked': [],
+                'geographic_restrictions': [],
+                'time_based_restrictions': False,
+                'amount_controls': True,
+            },
+            'compliance': {
+                'pci_dss_compliant': True,
+                'gdpr_compliant': True,
+                'ndpr_compliant': True,
+                'created_timestamp': datetime.now().isoformat(),
+                'expires_at': (datetime.now() + timedelta(days=1095)).isoformat(),  # 3 years
+            },
+            'partnership_data': {
+                'hotel_access_level': self.tier,
+                'loyalty_program': 'vip_rewards',
+                'partner_discounts': True,
+            }
+        }
+        
+        # In production, this should be properly encrypted
+        return json.dumps(metadata, indent=2)
+    
+    def activate_card(self, user, ip_address=None, user_agent='', method='mobile_app', admin_user=None):
         """Activate card for a user"""
+        from .activation_history_models import CardActivationHistory
+        
         if self.status != 'sold':
             raise ValueError("Card must be purchased before activation")
         
         if self.owner != user:
             raise ValueError("Card can only be activated by the owner")
         
-        # Activate card
-        self.status = 'active'
-        self.activated_at = timezone.now()
-        self.expires_at = timezone.now() + timezone.timedelta(days=30 * self.validity_months)
-        self.activation_ip = ip_address
-        self.save()
+        # Create activation history record
+        activation_record = CardActivationHistory.create_premium_activation_record(
+            premium_card=self,
+            user=user,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            method=method,
+            admin_user=admin_user
+        )
         
-        # Update user tier
-        user.tier = self.tier
-        user.save()
-        
-        return True
+        try:
+            with transaction.atomic():
+                # Activate card
+                self.status = 'active'
+                self.activated_at = timezone.now()
+                self.expires_at = timezone.now() + timezone.timedelta(days=30 * self.validity_months)
+                self.activation_ip = ip_address
+                self.save()
+                
+                # Update user tier
+                user.tier = self.tier
+                user.save()
+                
+                # Mark activation as successful
+                activation_record.mark_successful()
+                
+                return True
+                
+        except Exception as e:
+            # Mark activation as failed
+            activation_record.mark_failed(str(e))
+            raise
     
     def is_active(self):
         """Check if card is currently active"""

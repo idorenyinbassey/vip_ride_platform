@@ -769,3 +769,6 @@ class SecurityEvent(models.Model):
 
 # Import Premium Card models
 from .premium_card_models import PremiumDigitalCard, PremiumCardTransaction
+
+# Import Activation History models  
+from .activation_history_models import CardActivationHistory, CardUsageLog

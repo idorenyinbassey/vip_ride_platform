@@ -83,6 +83,36 @@ yarn-error.log*
 .expo-shared/
 expo-env.d.ts
 
+# Flutter
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.metadata
+mobile/.packages
+mobile/pubspec.lock
+mobile/build/
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/flutter_export_environment.sh
+mobile/ios/Flutter/App.framework
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Runner.xcworkspace/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/upload-keystore.jks
+mobile/android/app/src/main/java/io/flutter/plugins/
+
+# Flutter Web
+mobile/web/
+
+# Flutter Generated Files
+mobile/lib/generated_plugin_registrant.dart
+
 # macOS
 .DS_Store
 .AppleDouble
