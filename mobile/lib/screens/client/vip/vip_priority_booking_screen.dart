@@ -476,8 +476,7 @@ class _VipPriorityBookingScreenState extends State<VipPriorityBookingScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _buildVehicleOption(vehicle),
                   );
-                })
-                .toList(),
+                }),
           ],
         ),
       ),
@@ -523,8 +522,7 @@ class _VipPriorityBookingScreenState extends State<VipPriorityBookingScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _buildDriverOption(driver),
                   );
-                })
-                .toList(),
+                }),
           ],
         ),
       ),
@@ -744,7 +742,7 @@ class _VipPriorityBookingScreenState extends State<VipPriorityBookingScreen> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.amber[600],
+          activeThumbColor: Colors.amber[600],
         ),
       ],
     );

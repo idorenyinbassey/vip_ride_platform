@@ -14,7 +14,7 @@ class _VipProfileScreenState extends State<VipProfileScreen> {
   bool _isLoading = false;
 
   // User profile data
-  Map<String, dynamic> _userProfile = {
+  final Map<String, dynamic> _userProfile = {
     'id': 'vip_user_001',
     'full_name': 'Dr. Sarah Williams',
     'email': 'sarah.williams@email.com',
@@ -27,7 +27,7 @@ class _VipProfileScreenState extends State<VipProfileScreen> {
   };
 
   // VIP stats
-  Map<String, dynamic> _vipStats = {
+  final Map<String, dynamic> _vipStats = {
     'total_rides': 127,
     'total_spent': 2845000.0,
     'average_rating': 4.9,
@@ -38,7 +38,7 @@ class _VipProfileScreenState extends State<VipProfileScreen> {
   };
 
   // Loyalty info
-  Map<String, dynamic> _loyaltyInfo = {
+  final Map<String, dynamic> _loyaltyInfo = {
     'current_points': 18750,
     'lifetime_points': 25450,
     'tier_points': 18750,
@@ -55,7 +55,7 @@ class _VipProfileScreenState extends State<VipProfileScreen> {
   };
 
   // Preferred drivers
-  List<Map<String, dynamic>> _preferredDrivers = [
+  final List<Map<String, dynamic>> _preferredDrivers = [
     {
       'id': 'vip_driver_001',
       'name': 'James Okafor',

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_provider.dart';
-import 'independent_driver_home_screen.dart';
-import 'independent_driver_rides_screen.dart';
-import 'independent_driver_earnings_screen.dart';
-import 'independent_driver_profile_screen.dart';
 
 class IndependentDriverApp extends StatefulWidget {
   const IndependentDriverApp({super.key});

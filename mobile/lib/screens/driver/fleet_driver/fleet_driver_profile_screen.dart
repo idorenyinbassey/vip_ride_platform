@@ -475,7 +475,7 @@ class _FleetDriverProfileScreenState extends State<FleetDriverProfileScreen> {
                   entry.value,
                 ),
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 8),
             SizedBox(

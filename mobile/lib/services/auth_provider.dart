@@ -5,8 +5,10 @@ import '../models/mfa_models.dart';
 import 'api_service.dart';
 import 'user_service.dart';
 import '../config/api_config.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const _storage = FlutterSecureStorage();
   User? _user;
   bool _isLoading = false;
   String? _error;
@@ -72,6 +74,18 @@ class AuthProvider extends ChangeNotifier {
       );
 
       final loginResponse = await _apiService.login(loginRequest);
+
+      // Save tokens to secure storage for interceptor
+      if (loginResponse.tokens != null) {
+        await _storage.write(
+          key: 'access_token',
+          value: loginResponse.tokens!.accessToken,
+        );
+        await _storage.write(
+          key: 'refresh_token',
+          value: loginResponse.tokens!.refreshToken,
+        );
+      }
 
       // Check if MFA is required
       if (loginResponse.mfaRequirement != null) {

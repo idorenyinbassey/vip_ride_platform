@@ -812,7 +812,7 @@ class _LeasedDriverProfileScreenState extends State<LeasedDriverProfileScreen> {
                   entry.value,
                 ),
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 8),
             SizedBox(

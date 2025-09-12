@@ -27,13 +27,13 @@ class _IndependentDriverProfileScreenState
   String _vehicleModel = '2019 Toyota Camry';
   String _vehiclePlate = 'ABC-123-XY';
   String _vehicleColor = 'Silver';
-  String _licenseExpiry = 'Dec 2025';
+  final String _licenseExpiry = 'Dec 2025';
 
   // Documents status
-  bool _licenseVerified = true;
-  bool _insuranceVerified = true;
-  bool _roadworthinessVerified = false;
-  bool _backgroundCheckPassed = true;
+  final bool _licenseVerified = true;
+  final bool _insuranceVerified = true;
+  final bool _roadworthinessVerified = false;
+  final bool _backgroundCheckPassed = true;
 
   bool _isLoading = false;
 

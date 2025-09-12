@@ -1,0 +1,30 @@
+{
+    "name": "vip-ride-mock-api",
+    "version": "1.0.0",
+    "description": "Mock API server for VIP Ride Platform Flutter app testing",
+    "main": "mock-server.js",
+    "scripts": {
+        "start": "node mock-server.js",
+        "dev": "nodemon mock-server.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "body-parser": "^1.20.2",
+        "uuid": "^9.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "bcryptjs": "^2.4.3"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    },
+    "keywords": [
+        "mock",
+        "api",
+        "flutter",
+        "testing",
+        "vip-ride"
+    ],
+    "author": "VIP Ride Platform",
+    "license": "MIT"
+}

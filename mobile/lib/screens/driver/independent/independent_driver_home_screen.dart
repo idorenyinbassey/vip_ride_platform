@@ -21,7 +21,7 @@ class _IndependentDriverHomeScreenState
 
   bool _isOnline = false;
   bool _isLoading = false;
-  List<Ride> _nearbyRides = [];
+  final List<Ride> _nearbyRides = [];
   geo.LatLng? _currentLocation;
 
   // Driver stats

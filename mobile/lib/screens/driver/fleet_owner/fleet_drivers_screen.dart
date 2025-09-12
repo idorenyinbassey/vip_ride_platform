@@ -643,7 +643,7 @@ class _FleetDriversScreenState extends State<FleetDriversScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${docType.replaceAll('_', ' ').toUpperCase()} ${status}',
+                    '${docType.replaceAll('_', ' ').toUpperCase()} $status',
                     style: TextStyle(
                       fontSize: 11,
                       color: status == 'expired'

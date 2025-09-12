@@ -200,7 +200,7 @@ class _LeasedDriverHomeScreenState extends State<LeasedDriverHomeScreen> {
             Switch(
               value: _isOnline,
               onChanged: (value) => _toggleOnlineStatus(),
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: Colors.green[300],
             ),
           ],

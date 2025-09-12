@@ -1,8 +1,23 @@
 class ApiConfig {
-  // Base URL pointing to your Django backend
-  static const String baseUrl = 'http://127.0.0.1:8001';
+  // Environment Configuration
+  static const bool useMockApi = false; // Set to false for production Django
+  static const bool debugMode = true;
 
-  // API Endpoints based on your Django backend
+  // API URLs
+  static const String mockApiUrl = 'http://localhost:8000';
+  static const String realApiUrl =
+      'http://127.0.0.1:8001'; // Your Django backend
+  static const String prodApiUrl = 'https://your-production-domain.com';
+
+  // Dynamic base URL based on environment
+  static String get baseUrl {
+    if (useMockApi) {
+      return mockApiUrl;
+    }
+    return debugMode ? realApiUrl : prodApiUrl;
+  }
+
+  // Authentication endpoints
   static const String loginEndpoint = '/api/v1/accounts/login/';
   static const String registerEndpoint = '/api/v1/accounts/register/';
   static const String refreshTokenEndpoint = '/api/v1/accounts/token/refresh/';
@@ -15,13 +30,20 @@ class ApiConfig {
   static const String mfaEmailEndpoint = '/api/v1/accounts/auth/mfa/email/';
   static const String mfaTotpSetupEndpoint =
       '/api/v1/accounts/auth/mfa/totp/setup/';
+  static const String mfaSetupEndpoint = '/api/v1/accounts/auth/mfa/setup/';
+
+  // Card endpoints
+  static const String premiumCardsEndpoint = '/api/v1/accounts/premium-cards/';
+  static const String cardActivationEndpoint =
+      '/api/v1/accounts/cards/activate/';
 
   // Ride endpoints
   static const String ridesEndpoint = '/api/v1/rides/';
-  static const String rideRequestEndpoint = '/api/v1/rides/request/';
+  static const String rideRequestEndpoint = '/api/v1/rides/workflow/request/';
   static const String rideStatusEndpoint = '/api/v1/rides/status/';
   static const String rideHistoryEndpoint = '/api/v1/rides/history/';
   static const String rideCancelEndpoint = '/api/v1/rides/cancel/';
+  static const String activeRidesEndpoint = '/api/v1/rides/workflow/active/';
 
   // Driver endpoints
   static const String driversEndpoint = '/api/v1/drivers/';
@@ -38,8 +60,8 @@ class ApiConfig {
   static const String fleetEndpoint = '/api/v1/fleet-management/companies/';
   static const String fleetDriversEndpoint =
       '/api/v1/fleet-management/drivers/';
-  static const String fleetVehiclesEndpoint =
-      '/api/v1/fleet-management/fleet-vehicles/';
+  static const String fleetVehiclesEndpoint = '/api/v1/fleet/api/vehicles/';
+  static const String fleetCompaniesEndpoint = '/api/v1/fleet/api/companies/';
 
   // Lease endpoints
   static const String leaseEndpoint = '/api/v1/leasing/contracts/';
@@ -48,8 +70,10 @@ class ApiConfig {
   static const String leaseApplicationEndpoint =
       '/api/v1/leasing/applications/';
 
-  // Hotel endpoints (for Black-Tier)
-  static const String hotelsEndpoint = '/api/v1/hotel-partnerships/';
+  // Hotel endpoints (for VIP Premium)
+  static const String hotelsEndpoint = '/api/v1/hotel-partnerships/hotels/';
+  static const String nearbyHotelsEndpoint =
+      '/api/v1/hotel-partnerships/hotels/nearby/';
   static const String hotelBookingsEndpoint =
       '/api/v1/hotel-partnerships/bookings/';
   static const String hotelOffersEndpoint =
@@ -57,20 +81,19 @@ class ApiConfig {
 
   // Payment endpoints
   static const String paymentsEndpoint = '/api/v1/payments/';
-  static const String paymentMethodsEndpoint =
-      '/api/v1/payments/payment-methods/';
+  static const String paymentMethodsEndpoint = '/api/v1/payments/methods/';
+  static const String paymentHistoryEndpoint = '/api/v1/payments/history/';
   static const String transactionsEndpoint = '/api/v1/payments/transactions/';
 
   // GPS and location endpoints
-  static const String gpsLocationsEndpoint = '/api/v1/gps/locations/';
-  static const String gpsEncryptEndpoint = '/api/v1/gps/encrypt/';
+  static const String gpsTrackingEndpoint = '/api/v1/gps/locations/';
+  static const String encryptedGpsEndpoint = '/api/v1/gps/encrypt/';
   static const String gpsDecryptEndpoint = '/api/v1/gps/decrypt/';
   static const String gpsKeyExchangeEndpoint = '/api/v1/gps/key-exchange/';
   static const String gpsSessionStatusEndpoint = '/api/v1/gps/sessions/';
   static const String gpsTerminateSessionEndpoint =
       '/api/v1/gps/sessions/terminate/';
   static const String gpsStatsEndpoint = '/api/v1/gps/stats/';
-  static const String gpsTrackingEndpoint = '/api/v1/gps-tracking/locations/';
   static const String gpsRealtimeEndpoint = '/api/v1/gps-tracking/realtime/';
 
   // SOS endpoints
@@ -81,14 +104,51 @@ class ApiConfig {
   static const String pricingEndpoint = '/api/v1/pricing/estimates/';
   static const String surgePricingEndpoint = '/api/v1/pricing/surge/';
 
-  // Notification endpoints
-  static const String notificationsEndpoint = '/api/v1/notifications/';
+  // Notifications endpoints
+  static const String notificationsEndpoint =
+      '/api/v1/notifications/notifications/';
+  static const String markReadEndpoint =
+      '/api/v1/notifications/notifications/{id}/mark_read/';
+
+  // Mock API specific endpoints (for testing)
+  static const String mockHealthEndpoint = '/health/';
+  static const String mockAdminSessionsEndpoint = '/mock/admin/sessions';
+  static const String mockAdminDevicesEndpoint = '/mock/admin/devices';
+  static const String mockAdminUsersEndpoint = '/mock/admin/users';
 
   // WebSocket endpoints
   static const String wsBaseUrl = 'ws://127.0.0.1:8001';
   static const String rideTrackingWs = '/ws/rides/';
   static const String gpsTrackingWs = '/ws/gps/';
   static const String notificationsWs = '/ws/notifications/';
+
+  // Flutter-specific endpoints
+  static const String flutterTierStatusEndpoint =
+      '/api/v1/accounts/flutter/tier-status/';
+  static const String flutterCardActivationEndpoint =
+      '/api/v1/accounts/flutter/activate-card/';
+
+  // Environment info
+  static String get environmentInfo {
+    return useMockApi ? 'Mock API' : (debugMode ? 'Development' : 'Production');
+  }
+
+  // Full URL builders
+  static String getFullUrl(String endpoint) {
+    return '$baseUrl$endpoint';
+  }
+
+  static Map<String, String> get defaultHeaders {
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (useMockApi) 'X-Mock-API': 'true',
+    };
+  }
+
+  static Map<String, String> getAuthHeaders(String token) {
+    return {...defaultHeaders, 'Authorization': 'Bearer $token'};
+  }
 
   // Timeout settings
   static const int connectionTimeout = 30000; // 30 seconds
@@ -98,7 +158,7 @@ class ApiConfig {
 
 class AppConstants {
   // App Info
-  static const String appName = 'VIP Ride';
+  static const String appName = 'VIP Ride Platform';
   static const String appVersion = '1.0.0';
 
   // User Types (must match Django UserType choices)

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
-import '../../../models/ride_models.dart';
 
 class FleetVehiclesScreen extends StatefulWidget {
   const FleetVehiclesScreen({super.key});

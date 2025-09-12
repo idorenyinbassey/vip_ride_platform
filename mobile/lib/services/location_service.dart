@@ -61,6 +61,7 @@ class LocationService implements BaseLocationService {
   }
 
   // Get current location once
+  @override
   Future<Position?> getCurrentLocation() async {
     try {
       bool hasPermission = await requestLocationPermission();
@@ -82,6 +83,7 @@ class LocationService implements BaseLocationService {
   }
 
   // Start real-time location tracking
+  @override
   Future<bool> startLocationTracking() async {
     try {
       bool hasPermission = await requestLocationPermission();
@@ -117,6 +119,7 @@ class LocationService implements BaseLocationService {
   }
 
   // Stop location tracking
+  @override
   void stopLocationTracking() {
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;

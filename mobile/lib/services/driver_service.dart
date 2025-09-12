@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/ride_models.dart';
-import '../config/api_config.dart';
 import 'api_service.dart';
 
 class DriverService {

@@ -766,7 +766,7 @@ class _LeasedDriverEarningsScreenState extends State<LeasedDriverEarningsScreen>
 
             const SizedBox(height: 20),
 
-            Container(
+            SizedBox(
               height: 200,
               child: const Center(
                 child: Text(
@@ -811,7 +811,7 @@ class _LeasedDriverEarningsScreenState extends State<LeasedDriverEarningsScreen>
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildPayoutItem(payout),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

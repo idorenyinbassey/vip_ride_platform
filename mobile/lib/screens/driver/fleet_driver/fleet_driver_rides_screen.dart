@@ -58,10 +58,10 @@ class _FleetDriverRidesScreenState extends State<FleetDriverRidesScreen>
       ]);
 
       setState(() {
-        _availableRides = results[0] as List<Ride>;
-        final activeRides = results[1] as List<Ride>;
+        _availableRides = results[0];
+        final activeRides = results[1];
         _activeRide = activeRides.isNotEmpty ? activeRides.first : null;
-        _rideHistory = results[2] as List<Ride>;
+        _rideHistory = results[2];
         _isLoading = false;
       });
     } catch (e) {
@@ -312,7 +312,7 @@ class _FleetDriverRidesScreenState extends State<FleetDriverRidesScreen>
                 Expanded(
                   child: _buildDetailItem(
                     Icons.star,
-                    '${ride.driverRating?.toStringAsFixed(1) ?? "N/A"}',
+                    ride.driverRating?.toStringAsFixed(1) ?? "N/A",
                   ),
                 ),
               ],
@@ -444,7 +444,7 @@ class _FleetDriverRidesScreenState extends State<FleetDriverRidesScreen>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${ride.rating?.toStringAsFixed(1) ?? "N/A"}',
+                              ride.rating?.toStringAsFixed(1) ?? "N/A",
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -719,7 +719,7 @@ class _FleetDriverRidesScreenState extends State<FleetDriverRidesScreen>
                         Icon(Icons.star, size: 14, color: Colors.amber[600]),
                         const SizedBox(width: 2),
                         Text(
-                          '${ride.rating?.toStringAsFixed(1) ?? "N/A"}',
+                          ride.rating?.toStringAsFixed(1) ?? "N/A",
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

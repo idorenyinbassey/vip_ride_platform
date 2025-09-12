@@ -24,7 +24,7 @@ class _FleetDriverEarningsScreenState extends State<FleetDriverEarningsScreen>
   double _monthlyEarnings = 0.0;
 
   // Fleet commission info
-  double _fleetCommissionRate = 20.0;
+  final double _fleetCommissionRate = 20.0;
   double _grossEarnings = 0.0;
   double _fleetCommission = 0.0;
   double _netEarnings = 0.0;

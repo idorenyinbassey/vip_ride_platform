@@ -35,7 +35,7 @@ class _LiveRideBookingScreenState extends State<LiveRideBookingScreen> {
 
   // Ride state
   String _selectedVehicleType = 'standard';
-  String _selectedServiceLevel = 'regular';
+  final String _selectedServiceLevel = 'regular';
   FareEstimate? _fareEstimate;
   bool _isLoadingFare = false;
   bool _isBookingRide = false;

@@ -232,7 +232,7 @@ class _FleetDriverHomeScreenState extends State<FleetDriverHomeScreen> {
             Switch(
               value: _isOnline,
               onChanged: (value) => _toggleOnlineStatus(),
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: Colors.green[300],
             ),
           ],
@@ -399,7 +399,7 @@ class _FleetDriverHomeScreenState extends State<FleetDriverHomeScreen> {
                 Expanded(
                   child: _buildStatItem(
                     'Rating',
-                    '${_currentRating.toStringAsFixed(1)}',
+                    _currentRating.toStringAsFixed(1),
                     Icons.star,
                     Colors.amber,
                   ),

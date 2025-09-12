@@ -646,7 +646,7 @@ class _VipClientHomeScreenState extends State<VipClientHomeScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildDriverCard(driver),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -689,7 +689,7 @@ class _VipClientHomeScreenState extends State<VipClientHomeScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildRideCard(ride),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

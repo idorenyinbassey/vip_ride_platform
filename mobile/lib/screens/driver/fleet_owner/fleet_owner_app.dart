@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_provider.dart';
 import 'fleet_owner_dashboard_screen.dart';
-import 'fleet_vehicles_screen.dart';
-import 'fleet_drivers_screen.dart';
-import 'fleet_earnings_screen.dart';
 import 'fleet_reports_screen.dart';
 
 class FleetOwnerApp extends StatefulWidget {

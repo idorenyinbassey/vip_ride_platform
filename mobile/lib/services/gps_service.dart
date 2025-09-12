@@ -91,14 +91,14 @@ class GpsService {
       print('Encryption session initialized: $_encryptionSessionId');
     } catch (e) {
       print('Error initializing encryption session: $e');
-      throw e;
+      rethrow;
     }
   }
 
   Future<void> _startBackendTracking(String rideId, geo.LatLng location) async {
     try {
       await _apiService.post(
-        '${ApiConfig.gpsLocationsEndpoint}start/',
+        '${ApiConfig.gpsTrackingEndpoint}start/',
         data: {
           'ride_id': rideId,
           'latitude': location.latitude,
@@ -108,7 +108,7 @@ class GpsService {
       );
     } catch (e) {
       print('Error starting backend tracking: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -128,14 +128,14 @@ class GpsService {
 
       if (_encryptionSessionId != null) {
         final encryptedResponse = await _apiService.post(
-          ApiConfig.gpsEncryptEndpoint,
+          ApiConfig.encryptedGpsEndpoint,
           data: {'session_id': _encryptionSessionId, 'data': locationData},
         );
         locationData = encryptedResponse.data['encrypted_data'];
       }
 
       final response = await _apiService.post(
-        ApiConfig.gpsLocationsEndpoint,
+        ApiConfig.gpsTrackingEndpoint,
         data: locationData,
       );
 

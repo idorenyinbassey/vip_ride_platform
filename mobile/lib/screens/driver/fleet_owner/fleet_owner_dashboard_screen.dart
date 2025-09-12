@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
-import '../../../models/ride_models.dart';
 
 class FleetOwnerDashboardScreen extends StatefulWidget {
   const FleetOwnerDashboardScreen({super.key});
