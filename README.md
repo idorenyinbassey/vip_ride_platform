@@ -1,12 +1,12 @@
 # 🚗 VIP Ride-Hailing Platform
 
 [![Django Version](https://img.shields.io/badge/Django-5.2.5-green.svg)](https://www.djangoproject.com/)
-[![React Native](https://img.shields.io/badge/React%20Native-0.80.2-blue.svg)](https://reactnative.dev/)
+[![Flutter](https://img.shields.io/badge/Flutter-3.9.2-blue.svg)](https://flutter.dev/)
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
 
-A comprehensive multi-tier ride-hailing platform with Django 5.2.5 backend, supporting Normal, Premium, and VIP service tiers with advanced features like encrypted GPS tracking, hotel partnerships, emergency response systems, and 126+ API endpoints.
+A comprehensive multi-tier ride-hailing platform with Django 5.2.5 backend and Flutter mobile app, supporting Normal, Premium, and VIP service tiers with advanced features like encrypted GPS tracking, hotel partnerships, emergency response systems, and 126+ API endpoints.
 
 ## 📋 Table of Contents
 
@@ -14,8 +14,11 @@ A comprehensive multi-tier ride-hailing platform with Django 5.2.5 backend, supp
 - [📖 Documentation](#-documentation)
 - [🐳 Docker Deployment](#-docker-deployment)
 - [💻 Desktop Development](#-desktop-development)
+- [📱 Flutter Mobile App](#-flutter-mobile-app)
 - [🌐 Production Deployment](#-production-deployment)
-- [🏗️ Architecture](#️-architecture)
+- [� Recent Updates](#-recent-updates)
+- [�🏗️ Architecture](#️-architecture)
+- [🛠️ Technology Stack](#️-technology-stack)
 - [💼 Business Model](#-business-model)
 - [🔒 Security](#-security)
 - [🤝 Contributing](#-contributing)
@@ -69,32 +72,31 @@ python manage.py runserver 127.0.0.1:8001
 
 ## 📖 Documentation
 
-### 📚 Core Documentation
-- **[📘 Development Guide](./DEVELOPMENT.md)** - Complete local development setup
-- **[🔌 API Documentation](./API_DOCUMENTATION.md)** - All 126+ API endpoints
+> 📚 **[Complete Documentation Index](./docs/INDEX.md)** - Master navigation for all documentation
+
+### 🚀 Quick Access Documentation
+- **[📘 Development Guide](./docs/development/DEVELOPMENT_CONFIGURATION_GUIDE.md)** - Complete local development setup
+- **[🔌 API Documentation](./docs/guides/API_DOCUMENTATION.md)** - All 126+ API endpoints
 - **[🐳 Docker Deployment Guide](#-docker-deployment)** - Containerized deployment
-- **[🌐 Production Deployment Guide](#-production-deployment)** - Cloud deployment
-- **[🔒 RBAC Security Guide](#-rbac-integration)** - Role-based access control
+- **[🌐 Production Deployment Guide](./docs/deployment/DEPLOYMENT.md)** - Cloud deployment
+- **[� Flutter Mobile App](./mobile/README.md)** - Mobile app setup & features
 
-### 📂 Technical Documentation
-- **[🏗️ Architecture Overview](./TECHNICAL_DOCUMENTATION.md)** - System architecture
-- **[💳 Payment Integration Guide](./PAYMENT_TEST_RESULTS.md)** - Multi-gateway setup
-- **[🚨 Emergency Response System](./GPS_ENCRYPTION_SETUP.md)** - SOS & GPS encryption
-- **[🏨 Hotel Partnership API](./hotel_partnerships/)** - Hotel booking integration
-- **[📱 Mobile App Setup](./mobile/README.md)** - React Native apps
-
-### 📊 Project Documentation
-- **[📋 Project Summary](./PROJECT_SUMMARY.md)** - High-level overview
-- **[🗺️ Project Roadmap](./PROJECT_ROADMAP.md)** - Development phases
-- **[🔧 Enhanced Models](./ENHANCED_MODELS_SUMMARY.md)** - Database architecture
-- **[🛡️ Security Improvements](./SECURITY_IMPROVEMENTS_SUMMARY.md)** - Security features
-- **[🔑 JWT Implementation](./JWT_IMPLEMENTATION_GUIDE.md)** - Authentication system
+### 📂 Documentation Categories
+- **[🏗️ Architecture](./docs/architecture/)** - System architecture overview
+- **[� Implementation](./docs/implementation/)** - Feature implementations & fixes
+- **[� Development](./docs/development/)** - Development configuration & milestones
+- **[🧪 Testing](./docs/testing/)** - Testing guides & results
+- **[� Security](./docs/security/)** - Security procedures & testing
+- **[📋 Technical](./docs/technical/)** - Technical specifications & systems
+- **[� Guides](./docs/guides/)** - Step-by-step implementation guides
+- **[� Deployment](./docs/deployment/)** - Production deployment guides
+- **[🧹 Maintenance](./docs/maintenance/)** - Project cleanup & optimization
 
 ### ⚙️ Configuration & Setup
 - **[🌍 Environment Configuration](./.env.example)** - Environment variables
-- **[🔧 RBAC Settings](./rbac_settings.py)** - Role-based access control
-- **[🐧 GeoDjango Upgrade](./GEODJANGO_UPGRADE_GUIDE.md)** - Spatial database features
-- **[📊 Monitoring Setup](./logs/)** - Logging configuration
+- **[� JWT Implementation Guide](./docs/guides/JWT_IMPLEMENTATION_GUIDE.md)** - Authentication system
+- **[� GPS Encryption Setup](./docs/guides/GPS_ENCRYPTION_SETUP.md)** - VIP GPS security
+- **[🏨 Hotel Partnership API](./hotel_partnerships/)** - Hotel booking integration
 
 ## 🐳 Docker Deployment
 
@@ -547,6 +549,118 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 ```
 
+## 📱 Flutter Mobile App
+
+### 🚀 Mobile App Features
+
+#### Multi-Tier User Support
+- **Regular Clients**: Standard ride booking with basic features
+- **VIP Clients**: Priority booking, premium vehicles, enhanced SOS
+- **VIP Premium**: Hotel partnerships, encrypted tracking, concierge support
+- **Drivers**: Independent, Fleet Owner, Fleet Driver, Leased Driver roles
+
+#### Core Features
+- **Real-time Ride Booking**: Live driver tracking with OpenStreetMap
+- **Location Services**: GPS tracking with AES-256-GCM encryption for VIP users
+- **Payment Integration**: Stripe, Flutterwave, and Paystack support
+- **Emergency System**: SOS button with escalated alerts based on user tier
+- **Hotel Integration**: Seamless hotel booking for VIP Premium users
+- **Fleet Management**: Complete fleet operations for fleet owners
+
+### 🔧 Mobile Development Setup
+
+#### 1. Prerequisites
+```bash
+# Install Flutter SDK 3.9.2+
+flutter --version
+
+# Install dependencies
+flutter doctor
+```
+
+#### 2. Setup Mobile App
+```bash
+# Navigate to mobile directory
+cd mobile/
+
+# Get Flutter dependencies
+flutter pub get
+
+# Run code generation (if needed)
+flutter packages pub run build_runner build
+
+# Check for issues
+flutter analyze
+```
+
+#### 3. Configuration
+```bash
+# Copy mobile environment config
+cp mobile/.env.example mobile/.env
+
+# Update API endpoints in .env
+API_BASE_URL=http://127.0.0.1:8001  # Local development
+# API_BASE_URL=https://your-domain.com  # Production
+```
+
+#### 4. Run Mobile App
+```bash
+# Start Django backend first
+python manage.py runserver 127.0.0.1:8001
+
+# In mobile directory, run Flutter app
+flutter run
+
+# For specific platforms
+flutter run -d chrome        # Web
+flutter run -d android       # Android
+flutter run -d ios          # iOS (macOS only)
+```
+
+### 📱 Mobile App Architecture
+
+#### Role-Based Navigation
+```dart
+// Automatic role detection and routing
+if (userRole == 'client_regular') {
+  return RegularClientApp();
+} else if (userRole == 'client_vip') {
+  return VIPClientApp();
+} else if (userRole == 'client_vip_premium') {
+  return VIPPremiumClientApp();
+} else if (userRole == 'driver_independent') {
+  return IndependentDriverApp();
+}
+```
+
+#### Key Directories
+```
+mobile/
+├── lib/
+│   ├── screens/
+│   │   ├── client/regular/     # Regular client screens
+│   │   ├── client/vip/         # VIP client screens  
+│   │   ├── client/vip_premium/ # VIP Premium screens
+│   │   ├── driver/independent/ # Independent driver screens
+│   │   ├── driver/fleet_owner/ # Fleet owner screens
+│   │   └── shared/             # Shared screens
+│   ├── services/               # API and business logic
+│   ├── models/                 # Data models
+│   └── widgets/                # Reusable UI components
+└── assets/                     # Images and static files
+```
+
+### 🔗 Backend Integration
+- **Django API**: Full REST API integration with 126+ endpoints
+- **JWT Authentication**: Secure token-based authentication
+- **Real-time Updates**: WebSocket integration for live features
+- **File Upload**: Image handling for profiles and documents
+- **GPS Encryption**: Secure location tracking for VIP users
+
+### 📱 Mobile App Documentation
+- **[Mobile App README](./mobile/README.md)** - Detailed mobile app documentation
+- **[Premium Integration Guide](./mobile/PREMIUM_INTEGRATION_GUIDE.md)** - VIP Premium features
+
 ## 🌐 Production Deployment
 
 ### ☁️ Cloud Platform Deployment
@@ -874,7 +988,23 @@ docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperu
 - [ ] Error logging configured
 - [ ] Monitoring set up
 
-## 🏗️ Architecture
+## � Recent Updates
+
+### ✨ September 2025 - Major Cleanup & Organization
+- **📚 Documentation Reorganization**: All documentation moved to structured `docs/` folder with 11 categories
+- **🧹 Project Cleanup**: Removed 44 unused files (911.4KB saved) while preserving all core functionality
+- **📱 Flutter Migration**: Updated from React Native to Flutter 3.9.2 for better cross-platform support
+- **🔧 Development Optimization**: Streamlined project structure for better maintainability
+- **📋 Master Documentation Index**: Created comprehensive navigation guide at `docs/INDEX.md`
+
+### 🚀 Key Improvements
+- **Clean Project Structure**: Professional organization following industry standards
+- **Better Navigation**: Logical documentation categorization with master index
+- **Mobile App Enhancement**: Flutter-based mobile app with role-based navigation
+- **Production Ready**: All systems verified and deployment-ready
+- **Developer Experience**: Improved setup guides and cleaner codebase
+
+## �🏗️ Architecture
 
 ### 🎯 System Overview
 
@@ -883,7 +1013,7 @@ docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperu
 │                    VIP Ride-Hailing Platform                │
 ├─────────────────────────────────────────────────────────────┤
 │  🌐 Frontend Layer                                         │
-│  ├── React Native Mobile Apps (iOS/Android)               │
+│  ├── Flutter Mobile Apps (iOS/Android/Web)                │
 │  ├── Web Dashboard (React.js)                             │
 │  └── Admin Portal (Django Admin)                          │
 ├─────────────────────────────────────────────────────────────┤
@@ -943,7 +1073,38 @@ docker-compose -f docker-compose.prod.yml exec web python manage.py createsuperu
    - Revenue-sharing contracts
    - Marketplace integration
 
-## 💼 Business Model
+## �️ Technology Stack
+
+### Backend Infrastructure
+- **Framework**: Django 5.2.5 with Django REST Framework 3.16.0
+- **Database**: PostgreSQL with Redis caching
+- **Authentication**: JWT with djangorestframework-simplejwt 5.5.1
+- **Real-time**: Django Channels 4.3.1 with Redis backend
+- **Task Queue**: Celery 5.5.3 with Redis broker
+- **Security**: AES-256-GCM encryption for VIP GPS tracking
+
+### Mobile Application
+- **Framework**: Flutter 3.9.2 with Dart SDK
+- **Architecture**: Role-based navigation (Client/Driver tiers)
+- **Maps**: OpenStreetMap with flutter_map integration
+- **State Management**: Provider/Riverpod pattern
+- **HTTP Client**: Dio for API communication
+- **Payments**: Stripe, Flutterwave, Paystack integration
+
+### DevOps & Infrastructure
+- **Containerization**: Docker with docker-compose
+- **Web Server**: Nginx with SSL/TLS
+- **Monitoring**: Prometheus + Grafana
+- **CI/CD**: GitHub Actions workflows
+- **Cloud**: DigitalOcean, AWS, or Heroku ready
+
+### Development Tools
+- **Code Quality**: Django Debug Toolbar, Flutter Analyzer
+- **Testing**: pytest-django, Flutter testing framework
+- **Documentation**: Comprehensive docs with INDEX navigation
+- **Version Control**: Git with professional project structure
+
+## �💼 Business Model
 
 ### 💰 Revenue Streams
 
@@ -1104,7 +1265,7 @@ django-admin test --debug-mode
 - Admin interfaces
 
 🚧 **Next Phase** (Q3 2025):
-- React Native mobile applications
+- Flutter mobile applications
 - Production deployment
 - Lagos market launch
 - Payment gateway integration
